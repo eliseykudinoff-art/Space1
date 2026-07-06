@@ -1,0 +1,115 @@
+# ═══════════════════════════════════════════════════════════════
+# 🌱 Цифровой Сад — Конфигурация Management Core
+# ═══════════════════════════════════════════════════════════════
+# Это центральный конфиг. Все исполнители подключаются сюда.
+# Заглушки помечены: # ← ЗАМЕНИТЬ
+
+# ─── Память ───────────────────────────────────────────────────
+memory:
+  storage_dir: "storage/memory"
+  max_session_messages: 50
+  max_context_messages: 10
+  auto_extract_facts: true
+  # Парадигмальная линза (по умолчанию)
+  default_paradigm: "neutral"
+
+# ─── Исполнители ──────────────────────────────────────────────
+# Каждый исполнитель — это внешний сервис, подключённый через API или MCP.
+# Типы: llm, agent, tool, mcp_server
+# Capabilities: search, analyze, summarize, generate_text, generate_code,
+#   generate_image, automate, communicate, schedule, reflect, track_state, plan, chat
+
+executors:
+
+  # ═══ LLM (через AI Super Router) ═══
+  llm_router:
+    type: "llm"
+    name: "AI Super Router"
+    endpoint: "http://localhost:8000/v1"  # ← Порт AI Super Router
+    priority: 1
+    capabilities:
+      - search
+      - analyze
+      - summarize
+      - generate_text
+      - generate_code
+      - communicate
+      - reflect
+      - plan
+      - chat
+      - recall
+
+  # ═══ Ollama (локальные модели через ngrok) ═══
+  ollama_local:
+    type: "llm"
+    name: "Ollama (Colab)"
+    endpoint: "https://xxxx-xx-xx.ngrok-free.app"  # ← ЗАМЕНИТЬ на ngrok URL из Colab
+    priority: 2
+    config:
+      model: "deepseek-coder:6.7b"  # ← Модель в Ollama
+    capabilities:
+      - generate_code
+      - analyze
+      - chat
+
+  # ═══ Browser Use (веб-автоматизация) ═══
+  browser_use:
+    type: "agent"
+    name: "Browser Use"
+    endpoint: "http://localhost:8001"  # ← Порт Browser Use
+    priority: 3
+    capabilities:
+      - search
+      - automate
+
+  # ═══ OpenHands (автономный кодер) ═══
+  openhands:
+    type: "agent"
+    name: "OpenHands"
+    endpoint: "http://localhost:3000"  # ← Порт OpenHands (Oracle Cloud)
+    priority: 4
+    capabilities:
+      - generate_code
+      - automate
+
+  # ═══ Dify.ai (workflow-оркестратор) ═══
+  dify:
+    type: "mcp_server"
+    name: "Dify Workflows"
+    endpoint: "https://api.dify.ai/v1"  # ← Или self-hosted URL
+    api_key: ""  # ← ЗАМЕНИТЬ на API-ключ Dify
+    priority: 3
+    capabilities:
+      - automate
+      - communicate
+      - schedule
+
+  # ═══ ComfyUI (генерация изображений) ═══
+  comfyui:
+    type: "tool"
+    name: "ComfyUI"
+    endpoint: "http://localhost:8188"  # ← Порт ComfyUI (Colab)
+    priority: 5
+    capabilities:
+      - generate_image
+
+# ─── Сервер ───────────────────────────────────────────────────
+server:
+  host: "0.0.0.0"
+  port: 8080
+  # Совместимость с OpenAI API
+  openai_compatible: true
+
+# ─── Расписание автозадач ─────────────────────────────────────
+schedules:
+  # Пример: ежедневная проверка вакансий
+  # daily_jobs_check:
+  #   cron: "0 9 * * *"
+  #   query: "Проверь новые вакансии дизайнера в Петербурге"
+  #   executor: browser_use
+
+  # Пример: утренний чекин
+  # morning_checkin:
+  #   cron: "0 8 * * *"
+  #   query: "Доброе утро! Как настроение? Что планируешь сегодня?"
+  #   executor: llm_router

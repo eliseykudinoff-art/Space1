@@ -6843,5 +6843,65 @@ python multi_agent_demo.py
 
 ---
 
+## 📦 Manus Archive Integration (2026-07-06)
+
+### Что интегрировано
+
+**Источник:** Архив Manus (ai_super_router + digital_garden)
+
+**Структура интеграции:**
+```
+Space1/
+├── docs/manuscripts/                    # Документы Manus
+│   ├── Математическое_моделирование_...md  # 4 функции оптимизации
+│   ├── AI_Super_Router_—_Обновление_...md  # 3-уровневая память
+│   ├── Глубокий_анализ_ИИ-технологий.md     # Tech stack обзор
+│   └── 🌱_Цифровой_Сад_—_Roadmap.md         # Roadmap
+│
+└── src/providers/manus_src/            # Код Manus
+    ├── ai_super_router/                 # Router для 22 провайдеров
+    └── digital_garden/                  # Graph-based память
+```
+
+### Ключевые находки из Manus
+
+| Компонент | Описание | Статус в Space1 |
+|-----------|----------|-----------------|
+| **Reputation Function** | Рейтинг, доверие, поток заказов | ⭐ Приоритетная интеграция |
+| **Learning Function** | ZPD, curriculum learning | ⭐ Приоритетная интеграция |
+| **Super Router** | 22 AI провайдера с fallback | 🟡 Средний приоритет |
+| **Knowledge Graph** | Graph-based память | 🟡 Средний приоритет |
+| **3-level Memory** | Short/Medium/Long term | 🔄 Требует адаптации |
+| **MCP Client** | Model Context Protocol | 🟢 Низкий приоритет |
+
+### Математическая связка
+
+**Manus добавляет в UNIFIED_MODEL.md:**
+
+```
+Q(D) = Σ w_i · q_i · φ_i(context)  — Quality Score (10 факторов)
+Ψ(D) = Risk Function                 — Риск-взвешенные решения
+L(D) = Learning Curve               — ZPD, η, forgetting
+R(D) = Reputation Score             — Ratings, trust, flow
+
+FINAL = α·Q + β·Ψ + γ·L + δ·R - λ·C + γ_syn
+```
+
+### Дедupликация
+
+| Найдено | Действие |
+|---------|----------|
+| 3x ai_super_router (идентичны) | Сохранена 1 копия |
+| 4x digital_garden (идентичны) | Сохранена 1 копия |
+| 2x Глубокий_анализ (дубликаты) | Удалён дубликат |
+| 5 оригинальных документов | Добавлены в docs/manuscripts/ |
+
+### Отчёт
+
+Полный отчёт: `MANUS_INTEGRATION_REPORT.md`
+
+---
+
 *Дневник ведётся с 2026-07-05*
 *Обновлено: 2026-07-06 — добавлена multi-agent система*
+*Обновлено: 2026-07-06 — интеграция Manus archive*

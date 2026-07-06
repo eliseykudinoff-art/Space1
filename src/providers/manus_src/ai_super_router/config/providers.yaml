@@ -1,0 +1,417 @@
+# ============================================================
+# 🌐 AI Super Router — Конфигурация провайдеров
+# ============================================================
+# 20+ бесплатных провайдеров AI API
+# Все без кредитной карты (если не указано иное)
+#
+# #ЗАГЛУШКА: замените "YOUR_KEY_HERE" на реальные ключи
+# ============================================================
+
+providers:
+  # --- TIER 1: Максимальные бесплатные лимиты ---
+
+  - name: "Google AI Studio (Gemini)"
+    id: "google_gemini"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    api_key: "YOUR_GOOGLE_AI_KEY"  # #ЗАГЛУШКА: https://aistudio.google.com/apikey
+    models:
+      - "gemini-2.0-flash"
+      - "gemini-1.5-flash"
+      - "gemini-1.5-pro"
+    limits:
+      rpm: 15          # requests per minute (free)
+      rpd: 1500        # requests per day
+      tpm: 1000000     # tokens per minute
+    format: "gemini"
+    health_url: "https://generativelanguage.googleapis.com"
+    credit_card_required: false
+    notes: "Самые щедрые лимиты. Gemini 2.0 Flash — бесплатно."
+
+  - name: "Groq"
+    id: "groq"
+    base_url: "https://api.groq.com/openai/v1"
+    api_key: "YOUR_GROQ_KEY"  # #ЗАГЛУШКА: https://console.groq.com/keys
+    models:
+      - "llama-3.3-70b-versatile"
+      - "llama-3.1-8b-instant"
+      - "mixtral-8x7b-32768"
+      - "gemma2-9b-it"
+    limits:
+      rpm: 30
+      rpd: 14400
+      tpm: 6000         # tokens per minute (varies by model)
+    format: "openai"
+    health_url: "https://api.groq.com"
+    credit_card_required: false
+    notes: "Самый быстрый inference (LPU). Низкие лимиты токенов но высокая скорость."
+
+  - name: "Cerebras"
+    id: "cerebras"
+    base_url: "https://api.cerebras.ai/v1"
+    api_key: "YOUR_CEREBRAS_KEY"  # #ЗАГЛУШКА: https://cloud.cerebras.ai/
+    models:
+      - "llama3.1-8b"
+      - "llama3.1-70b"
+    limits:
+      rpm: 30
+      rpd: 1000
+      tpm: 60000
+    format: "openai"
+    health_url: "https://api.cerebras.ai"
+    credit_card_required: false
+    notes: "Очень быстрый inference на специализированных чипах."
+
+  - name: "OpenRouter (Free Models)"
+    id: "openrouter"
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "YOUR_OPENROUTER_KEY"  # #ЗАГЛУШКА: https://openrouter.ai/keys
+    models:
+      - "meta-llama/llama-3.3-70b-instruct:free"
+      - "qwen/qwen-2.5-72b-instruct:free"
+      - "google/gemma-2-9b-it:free"
+      - "mistralai/mistral-7b-instruct:free"
+      - "deepseek/deepseek-r1:free"
+      - "microsoft/phi-3-mini-128k-instruct:free"
+    limits:
+      rpm: 20
+      rpd: 200
+      tpm: 100000
+    format: "openai"
+    health_url: "https://openrouter.ai/api/v1/models"
+    credit_card_required: false
+    notes: "26+ бесплатных моделей. Единый API для всех."
+
+  - name: "Mistral AI"
+    id: "mistral"
+    base_url: "https://api.mistral.ai/v1"
+    api_key: "YOUR_MISTRAL_KEY"  # #ЗАГЛУШКА: https://console.mistral.ai/api-keys
+    models:
+      - "mistral-small-latest"
+      - "open-mistral-7b"
+      - "open-mixtral-8x7b"
+    limits:
+      rpm: 10
+      rpd: 500
+      tpm: 500000
+    format: "openai"
+    health_url: "https://api.mistral.ai"
+    credit_card_required: false
+    notes: "Бесплатный tier с ограничениями. Хорошие модели."
+
+  # --- TIER 2: Средние лимиты ---
+
+  - name: "Cohere"
+    id: "cohere"
+    base_url: "https://api.cohere.com/v1"
+    api_key: "YOUR_COHERE_KEY"  # #ЗАГЛУШКА: https://dashboard.cohere.com/api-keys
+    models:
+      - "command-r"
+      - "command-r-plus"
+      - "command-light"
+    limits:
+      rpm: 20
+      rpd: 1000
+      tpm: 100000
+    format: "cohere"
+    health_url: "https://api.cohere.com"
+    credit_card_required: false
+    notes: "Trial keys бесплатны. Хорошие для RAG."
+
+  - name: "HuggingFace Inference API"
+    id: "huggingface"
+    base_url: "https://api-inference.huggingface.co/models"
+    api_key: "YOUR_HF_TOKEN"  # #ЗАГЛУШКА: https://huggingface.co/settings/tokens
+    models:
+      - "meta-llama/Llama-3.1-8B-Instruct"
+      - "mistralai/Mistral-7B-Instruct-v0.3"
+      - "Qwen/Qwen2.5-7B-Instruct"
+      - "google/gemma-2-9b-it"
+    limits:
+      rpm: 10
+      rpd: 1000
+      tpm: 50000
+    format: "huggingface"
+    health_url: "https://api-inference.huggingface.co"
+    credit_card_required: false
+    notes: "Бесплатный inference для популярных моделей. Может быть очередь."
+
+  - name: "Cloudflare Workers AI"
+    id: "cloudflare"
+    base_url: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run"
+    api_key: "YOUR_CF_TOKEN"  # #ЗАГЛУШКА: https://dash.cloudflare.com/profile/api-tokens
+    account_id: "YOUR_CF_ACCOUNT_ID"  # #ЗАГЛУШКА
+    models:
+      - "@cf/meta/llama-3.1-8b-instruct"
+      - "@cf/mistral/mistral-7b-instruct-v0.2"
+      - "@cf/qwen/qwen1.5-7b-chat"
+    limits:
+      rpm: 50
+      rpd: 10000
+      tpm: 300000       # 300k neurons/day free
+    format: "cloudflare"
+    health_url: "https://api.cloudflare.com"
+    credit_card_required: false
+    notes: "10,000 neurons/day бесплатно. Быстрый edge inference."
+
+  - name: "SambaNova"
+    id: "sambanova"
+    base_url: "https://api.sambanova.ai/v1"
+    api_key: "YOUR_SAMBANOVA_KEY"  # #ЗАГЛУШКА: https://cloud.sambanova.ai/
+    models:
+      - "Meta-Llama-3.1-8B-Instruct"
+      - "Meta-Llama-3.1-70B-Instruct"
+    limits:
+      rpm: 10
+      rpd: 100
+      tpm: 100000
+    format: "openai"
+    health_url: "https://api.sambanova.ai"
+    credit_card_required: false
+    notes: "Быстрый inference на специализированном железе."
+
+  - name: "Together AI"
+    id: "together"
+    base_url: "https://api.together.xyz/v1"
+    api_key: "YOUR_TOGETHER_KEY"  # #ЗАГЛУШКА: https://api.together.xyz/settings/api-keys
+    models:
+      - "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+      - "mistralai/Mixtral-8x7B-Instruct-v0.1"
+      - "Qwen/Qwen2.5-7B-Instruct-Turbo"
+    limits:
+      rpm: 10
+      rpd: 1000
+      tpm: 60000
+    format: "openai"
+    health_url: "https://api.together.xyz"
+    credit_card_required: false
+    notes: "$5 бесплатных кредитов при регистрации."
+
+  - name: "NVIDIA NIM"
+    id: "nvidia_nim"
+    base_url: "https://integrate.api.nvidia.com/v1"
+    api_key: "YOUR_NVIDIA_KEY"  # #ЗАГЛУШКА: https://build.nvidia.com/
+    models:
+      - "meta/llama-3.1-8b-instruct"
+      - "meta/llama-3.1-70b-instruct"
+      - "mistralai/mixtral-8x7b-instruct-v01"
+    limits:
+      rpm: 10
+      rpd: 500
+      tpm: 40000
+    format: "openai"
+    health_url: "https://integrate.api.nvidia.com"
+    credit_card_required: false
+    notes: "1000 бесплатных запросов. Быстрый inference на A100."
+
+  - name: "Fireworks AI"
+    id: "fireworks"
+    base_url: "https://api.fireworks.ai/inference/v1"
+    api_key: "YOUR_FIREWORKS_KEY"  # #ЗАГЛУШКА: https://fireworks.ai/api-keys
+    models:
+      - "accounts/fireworks/models/llama-v3p1-8b-instruct"
+      - "accounts/fireworks/models/mixtral-8x7b-instruct"
+    limits:
+      rpm: 10
+      rpd: 500
+      tpm: 50000
+    format: "openai"
+    health_url: "https://api.fireworks.ai"
+    credit_card_required: false
+    notes: "$1 бесплатных кредитов при регистрации."
+
+  - name: "DeepInfra"
+    id: "deepinfra"
+    base_url: "https://api.deepinfra.com/v1/openai"
+    api_key: "YOUR_DEEPINFRA_KEY"  # #ЗАГЛУШКА: https://deepinfra.com/dash/api_keys
+    models:
+      - "meta-llama/Llama-3.3-70B-Instruct"
+      - "mistralai/Mixtral-8x7B-Instruct-v0.1"
+      - "Qwen/Qwen2.5-72B-Instruct"
+    limits:
+      rpm: 20
+      rpd: 1000
+      tpm: 80000
+    format: "openai"
+    health_url: "https://api.deepinfra.com"
+    credit_card_required: false
+    notes: "Бесплатные кредиты при регистрации. Много моделей."
+
+  - name: "Novita AI"
+    id: "novita"
+    base_url: "https://api.novita.ai/v3/openai"
+    api_key: "YOUR_NOVITA_KEY"  # #ЗАГЛУШКА: https://novita.ai/dashboard/key
+    models:
+      - "meta-llama/llama-3.1-8b-instruct"
+      - "meta-llama/llama-3.1-70b-instruct"
+    limits:
+      rpm: 10
+      rpd: 500
+      tpm: 50000
+    format: "openai"
+    health_url: "https://api.novita.ai"
+    credit_card_required: false
+    notes: "$0.5 бесплатных кредитов."
+
+  - name: "Lepton AI"
+    id: "lepton"
+    base_url: "https://llama3-1-8b.lepton.run/api/v1"
+    api_key: "YOUR_LEPTON_KEY"  # #ЗАГЛУШКА: https://dashboard.lepton.ai/
+    models:
+      - "llama3-1-8b"
+      - "llama3-1-70b"
+    limits:
+      rpm: 10
+      rpd: 500
+      tpm: 40000
+    format: "openai"
+    health_url: "https://llama3-1-8b.lepton.run"
+    credit_card_required: false
+    notes: "$10 бесплатных кредитов при регистрации."
+
+  - name: "GitHub Models"
+    id: "github_models"
+    base_url: "https://models.inference.ai.azure.com"
+    api_key: "YOUR_GITHUB_TOKEN"  # #ЗАГЛУШКА: GitHub PAT с доступом к Models
+    models:
+      - "Meta-Llama-3.1-8B-Instruct"
+      - "Meta-Llama-3.1-70B-Instruct"
+      - "Mistral-large"
+      - "gpt-4o-mini"
+    limits:
+      rpm: 15
+      rpd: 150
+      tpm: 150000
+    format: "openai"
+    health_url: "https://models.inference.ai.azure.com"
+    credit_card_required: false
+    notes: "Бесплатно для пользователей GitHub. Лимиты зависят от модели."
+
+  - name: "Perplexity AI"
+    id: "perplexity"
+    base_url: "https://api.perplexity.ai"
+    api_key: "YOUR_PERPLEXITY_KEY"  # #ЗАГЛУШКА: https://www.perplexity.ai/settings/api
+    models:
+      - "llama-3.1-sonar-small-128k-online"
+      - "llama-3.1-sonar-large-128k-online"
+    limits:
+      rpm: 5
+      rpd: 50
+      tpm: 30000
+    format: "openai"
+    health_url: "https://api.perplexity.ai"
+    credit_card_required: true
+    notes: "$5 бесплатных кредитов. Уникальная фича: поиск в интернете."
+
+  - name: "Hyperbolic"
+    id: "hyperbolic"
+    base_url: "https://api.hyperbolic.xyz/v1"
+    api_key: "YOUR_HYPERBOLIC_KEY"  # #ЗАГЛУШКА: https://app.hyperbolic.xyz/
+    models:
+      - "meta-llama/Llama-3.1-8B-Instruct"
+      - "meta-llama/Llama-3.1-70B-Instruct"
+      - "Qwen/Qwen2.5-72B-Instruct"
+    limits:
+      rpm: 15
+      rpd: 1000
+      tpm: 60000
+    format: "openai"
+    health_url: "https://api.hyperbolic.xyz"
+    credit_card_required: false
+    notes: "Бесплатные кредиты при регистрации. Децентрализованный."
+
+  - name: "Chutes AI"
+    id: "chutes"
+    base_url: "https://llm.chutes.ai/v1"
+    api_key: "YOUR_CHUTES_KEY"  # #ЗАГЛУШКА: https://chutes.ai/
+    models:
+      - "deepseek-ai/DeepSeek-R1"
+      - "meta-llama/Llama-3.3-70B-Instruct"
+    limits:
+      rpm: 10
+      rpd: 500
+      tpm: 50000
+    format: "openai"
+    health_url: "https://llm.chutes.ai"
+    credit_card_required: false
+    notes: "Децентрализованный inference. Бесплатный tier."
+
+  - name: "Glhf.chat"
+    id: "glhf"
+    base_url: "https://glhf.chat/api/openai/v1"
+    api_key: "YOUR_GLHF_KEY"  # #ЗАГЛУШКА: https://glhf.chat/
+    models:
+      - "hf:meta-llama/Llama-3.3-70B-Instruct"
+      - "hf:Qwen/Qwen2.5-72B-Instruct"
+    limits:
+      rpm: 10
+      rpd: 200
+      tpm: 50000
+    format: "openai"
+    health_url: "https://glhf.chat"
+    credit_card_required: false
+    notes: "Бесплатный доступ к HuggingFace моделям через API."
+
+  - name: "Requesty (Free Tier)"
+    id: "requesty"
+    base_url: "https://router.requesty.ai/v1"
+    api_key: "YOUR_REQUESTY_KEY"  # #ЗАГЛУШКА: https://requesty.ai/
+    models:
+      - "meta-llama/llama-3.3-70b-instruct"
+      - "deepseek/deepseek-r1"
+    limits:
+      rpm: 10
+      rpd: 500
+      tpm: 50000
+    format: "openai"
+    health_url: "https://router.requesty.ai"
+    credit_card_required: false
+    notes: "AI-роутер с бесплатным tier."
+
+  - name: "Ollama (Local/ngrok)"
+    id: "ollama_local"
+    base_url: "http://YOUR_NGROK_URL/v1"  # #ЗАГЛУШКА: ngrok URL из Colab
+    api_key: "ollama"
+    models:
+      - "deepseek-coder:6.7b"
+      - "qwen2.5-coder:7b"
+      - "mistral:7b"
+    limits:
+      rpm: 999
+      rpd: 99999
+      tpm: 999999
+    format: "openai"
+    health_url: "http://YOUR_NGROK_URL"  # #ЗАГЛУШКА
+    credit_card_required: false
+    notes: "Ваш собственный Ollama. Безлимитный, но медленный."
+    priority: 0  # Используется как fallback
+
+# --- Настройки роутера ---
+router:
+  strategy: "maximize_uptime"     # maximize_uptime | maximize_quality | maximize_speed
+  fallback_chain: true            # Автоматически переключаться при ошибке
+  health_check_interval: 300      # Проверка серверов каждые 5 минут
+  retry_attempts: 3               # Попыток перед переключением
+  retry_delay: 2                  # Секунд между попытками
+  token_budget_tracking: true     # Отслеживать расход токенов
+  prefer_models:                  # Предпочтительные модели (по качеству)
+    - "llama-3.3-70b"
+    - "qwen2.5-72b"
+    - "mixtral-8x7b"
+    - "llama-3.1-8b"
+
+
+# ═══════════════════════════════════════════════════════════════
+# 🧠 ПАМЯТЬ И КОНТЕКСТ
+# ═══════════════════════════════════════════════════════════════
+memory:
+  storage_dir: "./memory_store"           # Директория хранения
+  max_session_messages: 50                # Макс. сообщений в сессии
+  max_context_tokens: 4000                # Макс. токенов контекста для LLM
+  max_facts: 1000                         # Макс. фактов в хранилище
+  max_entities: 500                       # Макс. сущностей
+  auto_extract_facts: true                # Автоизвлечение фактов из диалогов
+  auto_extract_entities: true             # Автоизвлечение сущностей
+  include_facts_in_context: true          # Добавлять факты в контекст LLM
+  include_session_summary: true           # Добавлять резюме предыдущей сессии
+  max_relevant_facts: 10                  # Макс. фактов в одном контексте
+  fact_relevance_decay: 0.95              # Затухание релевантности (0-1)
