@@ -6782,5 +6782,66 @@ A = f(autonomy, success_rate, knowledge, complexity_handled)
 
 ---
 
+## 🤖 Multi-Agent Workflow System (2026-07-06)
+
+### Структура агентов (.agents/)
+
+```
+.agents/
+├── architect.md   # Архитектор: дизайн системы, декомпозиция
+├── developer.md    # Разработчик: реализация кода
+├── reviewer.md    # Рецензент: проверка качества
+└── coordinator.md  # Координатор: оркестрация workflow
+```
+
+### Workflow Pipeline
+
+```
+User Request
+     │
+     ▼
+┌─────────────┐
+│  COORDINATOR│ ← Orchestrates the workflow
+└──────┬──────┘
+       │
+┌──────┼──────┐
+▼      ▼      ▼
+ARCHITECT  DEVELOPER  REVIEWER
+  Design    Implement   Validate
+```
+
+### Использование
+
+1. **Python SDK**: `python multi_agent_demo.py` — демонстрация
+2. **OpenHands Cloud**: Подключение к GitHub репозиторию
+3. **Ручной режим**: Использовать координатора для сложных задач
+
+### Интеграция с OpenHands SDK
+
+```python
+from openhands.sdk import LLM, Agent, Conversation
+
+llm = LLM(model="gpt-5", api_key=os.getenv("OPENAI_API_KEY"))
+agent = create_agent("architect", llm)
+conversation = Conversation(agent=agent, workspace=os.getcwd())
+conversation.send_message("Your task...")
+conversation.run()
+```
+
+### Быстрый старт
+
+```bash
+# Установка SDK
+pip install openhands-sdk openhands-tools
+
+# Запуск демо
+python multi_agent_demo.py
+
+# Использование в OpenHands Cloud
+# Подключить GitHub репозиторий Space1
+```
+
+---
+
 *Дневник ведётся с 2026-07-05*
-*Следующее обновление: после интеграции Γ в код*
+*Обновлено: 2026-07-06 — добавлена multi-agent система*
