@@ -1,0 +1,1855 @@
+    Отслеживает provenance цепочку всех решений.
+    """
+    
+    def record(self, event: DecisionEvent):
+        """
+        Записывает каждое решение с полным контекстом.
+        """
+        self.chain.append({
+            "timestamp": now(),
+            "mission_snapshot": copy(self.current_mission),
+            "state_snapshot": copy(self.agent_state),
+            "decision": event.decision,
+            "reasoning": event.reasoning,
+            "outcome": None,  # Заполняется позже
+        })
+    
+    def detect_mission_drift(self) -> bool:
+        """
+        Сравнивает начальный mission с текущим поведением.
+        """
+        initial = self.chain[0]["mission_snapshot"]
+        recent_actions = self.chain[-100:]  # Последние 100 действий
+        
+        # Проверяем отклонение
+        drift_score = self.compute_drift(initial, recent_actions)
+        
+        return drift_score > self.drift_threshold
+```
+
+#### 2.3 Inverse Reward Design (IRD)
+
+**Reference:** [14] Inverse Reward Design — Hadfield-Menell & Russell
+
+```python
+class InverseRewardDesigner:
+    """
+    IRD: трактуем proxy reward как evidence о настоящей награде.
+    
+    Основная идея:
+    - Дизайнер дал нам proxy reward
+    - Это reward из proxy environment (не настоящего)
+    - Нужно восстановить uncertainty о настоящей reward
+    - Plan risk-averse с учётом этой uncertainty
+    """
+    
+    def plan_with_ird(
+        self,
+        proxy_reward: RewardFunction,
+        training_env: Environment,
+        actual_env: Environment
+    ) -> Plan:
+        """
+        Планирование с учётом reward uncertainty.
+        """
+        # Шаг 1: Инfer reward posterior
+        # P(R_true | R_proxy, env_proxy) 
+        reward_posterior = self.infer_reward_posterior(
+            proxy_reward,
+            training_env
+        )
+        
+        # Шаг 2: Risk-averse planning
+        # Вместо max R_proxy, ищем план который хорош
+        # для всех R в posterior с высокой вероятностью
+        return self.robust_optimize(
+            reward_posterior=reward_posterior,
+            planning_algorithm=self.mcts,
+            risk_measure="CVaR"
+        )
+```
+
+---
+
+### Вопрос 3: Task Complexity Estimation
+
+**Исходный контекст:** Проект оценивает сложность задач для агента.
+
+**Найденные подходы из research:**
+
+#### 3.1 Pre-Execution Complexity Pipeline
+
+**Reference:** [1] Task-Complexity Review Paper
+
+```python
+class TaskComplexityEstimator:
+    """
+    Pre-execution оценка сложности задачи.
+    """
+    
+    def estimate(self, task: Task) -> ComplexityReport:
+        """
+        Полный pipeline оценки сложности.
+        """
+        
+        # === FAST ANALYTIC PASS ===
+        graph_metrics = self.compute_graph_metrics(task)
+        
+        # b^d search bound (branching factor × depth)
+        search_bound = graph_metrics.avg_branching ** graph_metrics.depth
+        
+        # Critical path analysis
+        critical_path = self.find_critical_path(task)
+        
+        # === RISK PROXIES ===
+        # VaR / CVaR для risk assessment
+        var_95 = self.compute_var(task, confidence=0.95)
+        cvar_95 = self.compute_cvar(task, confidence=0.95)
+        
+        # === SAMPLING PASS (lightweight) ===
+        success_prob, expected_cost = self.monte_carlo_estimate(
+            task,
+            n_rollouts=50  # Budgeted
+        )
+        
+        return ComplexityReport(
+            search_bound=search_bound,
+            critical_path_length=critical_path.length,
+            n_critical_tasks=critical_path.n_tasks,
+            var_95=var_95,
+            cvar_95=cvar_95,
+            success_probability=success_prob,
+            expected_cost=expected_cost,
+            recommendation=self.get_recommendation(search_bound, success_prob)
+        )
+    
+    def compute_graph_metrics(self, task: Task) -> GraphMetrics:
+        """
+        Вычисляет метрики task graph.
+        """
+        # Precedence constraints density
+        density = len(task.dependencies) / (task.n_tasks * (task.n_tasks - 1))
+        
+        # Parallelizability (how much can be done in parallel)
+        parallelizability = self.compute_critical_path_ratio(task)
+        
+        # Fan-out (max children per task)
+        fan_out = max(t.n_subtasks for t in task.subtasks)
+        
+        return GraphMetrics(
+            n_tasks=task.n_tasks,
+            depth=task.depth,
+            avg_branching=task.avg_branching,
+            density=density,
+            parallelizability=parallelizability,
+            fan_out=fan_out,
+        )
+```
+
+#### 3.2 Факторы сложности из research
+
+| Категория | Фактор | Формула/Мера |
+|-----------|--------|--------------|
+| **Structural** | State-space size | \|S\| |
+| **Structural** | Branching factor | b = avg_actions_per_state |
+| **Structural** | Search depth | d |
+| **Graph** | Precedence density | edges / (n²) |
+| **Graph** | Critical path | longest_path_length |
+| **Dynamics** | Stochasticity | σ² transitions |
+| **Perception** | Sensor noise | ε ~ N(0, σ²) |
+| **Resources** | Budget pressure | C_spent / B_total |
+| **Time** | Deadline pressure | T_remaining / T_total |
+| **Risk** | Failure cost | Pr(failure) × cost |
+
+---
+
+### Вопрос 4: Principled Mission с иерархией
+
+**Исходный вопрос:**
+```
+□ Нужна ли иерархия принципов (какие важнее)?
+```
+
+**Найденные подходы из research:**
+
+#### 4.1 Normative MAS Framework
+
+**Reference:** [26] Norm emergence in MAS, [25] ReNo normative framework
+
+```python
+class NormativeLayer:
+    """
+    Иерархия норм в MAS.
+    
+    Categories:
+    - Regulative: регулируют процесс (когда, как)
+    - Constitutive: конституируют (создают институты)
+    
+    Strengths:
+    - Hard (must) > Soft (should) > Preference
+    """
+    
+    NORM_HIERARCHY = {
+        "prohibition": 1,   # Запрещено (Γ_rules)
+        "obligation": 2,    # Обязательно (critical principles)
+        "permission": 3,    # Разрешено (high principles)
+        "facultation": 4,  # Можно (medium/low principles)
+    }
+    
+    def evaluate_action(self, action: Action, context: Context) -> NormResult:
+        """
+        Оценивает действие против иерархии норм.
+        """
+        for norm in self.get_applicable_norms(action):
+            strength = self.NORM_HIERARCHY[norm.type]
+            
+            if norm.type == "prohibition":
+                if norm.is_violated(action, context):
+                    return NormResult(
+                        status="REJECT",
+                        reason=f"Prohibition violated: {norm.name}",
+                        norm=norm
+                    )
+            
+            elif norm.type == "obligation":
+                if not norm.is_satisfied(action, context):
+                    penalty = self.compute_penalty(norm, strength)
+                    # Soft rejection, но с penalty
+        
+        return NormResult(status="APPROVE", penalties=[])
+```
+
+#### 4.2 HADA Architecture (Human-AI Decision Alignment)
+
+**Reference:** [9] HADA Architecture
+
+```
+HADA ключевая идея:
+- Separation of concerns: кто определяет goals, кто выполняет
+- Role layers: Operator, Supervisor, Executor
+- Каждый слой имеет разные права и responsibilities
+```
+
+```python
+class HADAMission:
+    """
+    HADA-style mission hierarchy.
+    """
+    
+    class Operator:
+        """
+        Пользователь/заказчик — определяет high-level goals
+        """
+        def set_mission_type(self, mission_type: MissionType):
+            ...
+    
+    class Supervisor:
+        """
+        Mission — калибрует параметры
+        """
+        def calibrate_weights(self, mission_type, state):
+            ...
+    
+    class Executor:
+        """
+        Orchestrator — выполняет решения
+        """
+        def execute(self, policy_params, task):
+            ...
+```
+
+---
+
+### Вопрос 5: Mission vs Compliance Conflict
+
+**Исходный вопрос:**
+```
+□ Что делать если Mission конфликтует с Compliance?
+```
+
+**Найденные подходы из research:**
+
+#### 5.1 Separation of Hard vs Soft
+
+**Ключевая идея:** Mission определяет *soft* preferences, Compliance определяет *hard* constraints.
+
+```
+Priority: Γ (VETO) > M (Policy) > остальное
+```
+
+```python
+class DecisionFlow:
+    """
+    Flow принятия решения с иерархией.
+    """
+    
+    def evaluate(self, task: Task) -> Decision:
+        
+        # === STEP 1: Γ — HARD VETO ===
+        gamma_result = self.compliance.evaluate(task)
+        if gamma_result.status == "FAIL":
+            return Decision(
+                action="REJECT",
+                reason=f"Γ VETO: {gamma_result.reason}",
+                blocker="compliance"
+            )
+        
+        # === STEP 2: Mission calibration ===
+        policy_params = self.mission.calibrate(
+            self.current_mission,
+            self.agent_state,
+            self.context
+        )
+        
+        # === STEP 3: Strategic functions ===
+        phi = self.profit.evaluate(task, policy_params)
+        upsilon = self.reputation.evaluate(task, policy_params)
+        omega = self.evolution.evaluate(task, policy_params)
+        
+        # === STEP 4: Tactical functions ===
+        quality = self.quality.evaluate(task, policy_params)
+        risk = self.risk.evaluate(task, policy_params)
+        
+        # === STEP 5: Compose decision ===
+        utility = (
+            policy_params.weights.lambda_profit * phi +
+            policy_params.weights.lambda_reputation * upsilon +
+            policy_params.weights.lambda_evolution * omega
+        )
+        
+        if quality < policy_params.thresholds.q_min:
+            utility *= 0.5  # Penalty за низкое качество
+        
+        if risk > policy_params.thresholds.psi_max:
+            return Decision(
+                action="REJECT",
+                reason=f"ψ MAX exceeded: {risk} > {policy_params.thresholds.psi_max}",
+                blocker="risk"
+            )
+        
+        return Decision(
+            action="EXECUTE" if utility > self.threshold else "CLARIFY",
+            utility=utility,
+            details={...}
+        )
+```
+
+---
+
+### 📚 References из Deep Research
+
+#### Mission & Identity
+1. **Agent Behavioral Contracts** — arXiv:2602.22302v1
+   - Formal specification + runtime enforcement
+   - Baseline drift model: α·dt
+
+2. **Ontology + Goal Model** — CEUR-WS Vol-1099
+   - BDI agents с explicit goal models
+
+3. **Policy Cards** — arXiv:2510.24383v1
+   - Machine-readable governance
+
+#### Task Complexity
+4. **Task Complexity Review** — ixchel-ramirez-alpizar.com
+   - Comprehensive taxonomy of difficulty factors
+
+5. **Critical Path Analysis** — tbasten.estue.nl
+   - Trace analysis for scheduling
+
+6. **VaR/CVaR for Risk** — robert-moss.com, ahmadi2020riskBF
+   - Risk-sensitive planning
+
+#### Reward & Alignment
+7. **Inverse Reward Design** — arXiv:1711.02827
+   - Hadfield-Menell & Russell (2017)
+   - Risk-averse planning under reward uncertainty
+
+8. **CIRL (Cooperative IRL)** — nips16-cirl.pdf
+   - Human as reward-knower
+
+9. **HADA Architecture** — arXiv:2506.04253v1
+   - Human-AI Decision Alignment
+
+#### Self-Modification
+10. **Self-Evolving Agents Survey** — arXiv:2507.21046v4
+    - Comprehensive survey on self-modification
+
+11. **Competence-Aware Agents (MUSE)** — arXiv:2411.13537v2
+    - Metacognition for unknown situations
+
+12. **Runtime Verification (R2U2)** — JJKRZ23.pdf
+    - Formal monitors for embedded systems
+
+---
+
+### ✅ Обновлённые ответы на открытые вопросы
+
+| Вопрос | Рекомендация | Источник |
+|--------|--------------|----------|
+| Как менять Mission? | **Manual + State-triggered approval** | HADA, Behavioral Contracts |
+| Динамическая миссия? | **Да, но осторожно** с drift detection | Goal Change Detection |
+| Иерархия принципов? | **Да**: prohibition > obligation > permission | Normative MAS |
+| Mission drift prevention? | **Formal monitors + provenance + IRD** | R2U2, Policy Cards |
+| Mission vs Compliance? | **Γ всегда побеждает** (VETO > Policy) | Architecture decision |
+
+---
+
+## ⚖️ Фундаментальный вопрос: AI Model Architecture
+
+> **Статус:** ⏳ ОТКРЫТ — требует решения перед продолжением  
+> **Дата:** 2026-07-05  
+> **Критичность:** 🔴 БЛОКИРУЮЩИЙ — определяет всю архитектуру
+
+---
+
+### Проблема: Trojan Horse моделей
+
+**Издержки предобученных LLM:**
+
+```
+Наш Orchestrator:    λ_profit=0.8, λ_risk=0.2
+                     → Decision = REJECT
+
+Модель (GPT-4/Claude): 
+                     → "Я帮你解决这个问题！"
+                     → Игнорирует наш risk constraint
+                     → Делает по-своему
+```
+
+**Почему это происходит:**
+
+| Проблема | Описание |
+|----------|---------|
+| **Latent goals** | RLHF → "будь полезной" ≠ наша "useful" |
+| **Safety override** | Claude safety > наш profit |
+| **In-context drift** | Long conv → забывает constraints |
+| **Attention dilution** | 17 факторов в промпт → внимание распыляется |
+| **Goal misalignment** | Pretrained objectives ≠ our objectives |
+
+---
+
+### Что мы имеем сейчас
+
+```
+Orchestrator (Python / Перцептрон)
+├── Γ(Compliance) — VETO
+├── M(Mission) — Policy calibration
+├── Φ(Profit), Υ(Reputation), Ω(Evolution) — Objective functions
+├── Q(Risk), Ψ(Quality) — Constraints
+└── Decision = Σ(λᵢ × fᵢ) → REJECT / CLARIFY / EXECUTE
+```
+
+**Это уже нейросеть (перцептрон)!** Просто с ручными весами.
+
+---
+
+### Research: OpenClaw Architecture
+
+**OpenClaw** — это фреймворк для freelance AI агентов.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Gateway (WebSocket Control Plane)                    │
+│  - Multi-channel (WhatsApp, Telegram, CLI, web)      │
+└──────────────────────┬──────────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────────┐
+│  Agent Runtime                                      │
+│  - ReAct-style loop                                 │
+│  - Session history + memory (SQLite)                 │
+│  - Tool execution (sandboxed)                       │
+│  - Prompt injection shaping                         │
+└──────────────────────┬──────────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────────┐
+│  Model (Provider Abstraction)                        │
+│  - OpenAI, Anthropic, local models                 │
+│  - Model routing по задачам                         │
+│  - Per-model roles (reasoning vs summarization)     │
+└─────────────────────────────────────────────────────┘
+```
+
+**Key insights от OpenClaw:**
+- **Workspace = файлы** (AGENTS.md, MEMORY.md, SOUL.md)
+- **Policy plugin** — conformance layer
+- **Audit logs** — traceability
+- **ReAct loop** — reasoning → tool → observe
+- **НО:** Нет явной математической модели как у нас
+
+**Как OpenClaw решает alignment:**
+- Prompt injection
+- Policy.jsonc rules
+- Runtime telemetry
+- Hooks на model_call_started/ended
+
+**НЕДОСТАТКИ:**
+- Нет гарантии что модель следует policy
+- Mission как system prompt = fragile
+- Нет формальной верификации
+
+---
+
+### Research: TinyML для Decision Making
+
+**Что могут tiny модели (few KB RAM):**
+
+| Задача | Размер модели | Примеры |
+|--------|--------------|---------|
+| Keyword spotting | ~100 KB | 10 классов, DS-CNN |
+| Sensor classification | ~50 KB | Activity recognition |
+| Simple decisions | ~10-100 нейронов | Cart-Pole policy |
+| Rule-based logic | 0 (формулы!) | Наш Orchestrator |
+
+**Что НЕ могут (без гибрида):**
+- Multi-step reasoning (CLEVR fails)
+- Compositional understanding
+- Complex planning
+
+**Minimum для embedded ML:**
+- RAM: ~256 KB
+- Flash: ~1 MB
+- TensorFlow Lite for Microcontrollers
+
+**Гибридный подход (TinyNS):**
+- Small neural front-end (tiny)
+- Symbolic rule engine
+- Co-optimization для MCU
+
+---
+
+### Ключевой инсайт
+
+**LLM нужен ТОЛЬКО для:**
+
+| Задача | Нужен LLM? | Почему |
+|--------|-----------|--------|
+| Семантический анализ задачи | ✅ Да | Понимание текста |
+| Natural language интерфейс | ✅ Да | Генерация текста |
+| Кодогенерация | ✅ Да | Творческая задача |
+| **Принятие решений** | ❌ Нет | Формулы работают |
+| **Оценка риска/прибыли** | ❌ Нет | Числовые функции |
+| **Калибровка весов Mission** | ❌ Нет | Bayesian update |
+
+**Вывод:**
+```
+┌─────────────────────────────────────────────┐
+│  LLM = Semantic Engine (eyes, ears, mouth)   │
+│  Orchestrator = Decision Engine (brain)       │
+│  Связь = JSON/structured output             │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+### Три архитектурных пути
+
+#### Путь A: Pure Formulas (Orchestrator = перцептрон)
+
+```
+Task → [Feature Extraction] → numeric features
+                        ↓
+       [Orchestrator: weighted sum] → Decision
+                        ↓
+              [API calls / code execution] → result
+```
+
+**Плюсы:**
+- Полный контроль
+- Интерпретируемость
+- Нет "троянских коней"
+- Дешево
+
+**Минусы:**
+- Нет "интеллекта" для сложных задач
+- Semantic analysis — вручную
+- Ограниченное понимание контекста
+
+---
+
+#### Путь B: Orchestrator + Small LLM (semantic only)
+
+```
+Task → [LLM: semantic analysis] → structured features
+                        ↓
+       [Orchestrator: formulas] → Decision
+                        ↓
+              [LLM: execution] → result
+```
+
+**Плюсы:**
+- Чистое разделение concerns
+- Orchestrator контролирует всё
+- Можно маленький LLM
+
+**Минусы:**
+- LLM = execution tool, не brain
+- Ограниченная autonomy
+
+---
+
+#### Путь C: Full Agentic (Model = Brain)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  LLM Agent (mission-aware)                          │
+│  - System prompt = Mission Profile                  │
+│  - Policy plugin                                   │
+│  - Self-reasoning                                  │
+└─────────────────────────────────────────────────────┘
+```
+
+**Плюсы:**
+- Естественный подход
+- Может handle сложные случаи
+- Autonomous
+
+**Минусы:**
+- Mission как prompt = fragile
+- Latent goals ≠ our goals
+- Нет формальной верификации
+
+---
+
+### Сравнение путей
+
+| Критерий | A: Pure Formulas | B: Hybrid | C: Full Agentic |
+|----------|-----------------|-----------|-----------------|
+| **Контроль** | ✅ Максимальный | ✅ Высокий | ❌ Ограничен |
+| **Интерпретируемость** | ✅ 100% | ✅ Высокая | ❌ Низкая |
+| **Стоимость** | ✅~$0 | ⚠️ $10-100/мес | ⚠️ $100-1000/мес |
+| **Сложность реализации** | ✅ Простая | ⚠️ Средняя | ⚠️ Средняя |
+| **Semantic understanding** | ❌ Ручная | ✅ LLM | ✅ LLM |
+| **Alignment guarantee** | ✅ Формальный | ✅ Частичный | ❌ Нет |
+| **Гибкость** | ❌ Фиксированные правила | ✅ Mix | ✅ Высокая |
+
+---
+
+### Моя рекомендация
+
+**Путь B: Hybrid + Small LLM**
+
+```
+Структура:
+┌─────────────────────────────────────────────────────┐
+│  Orchestrator (Python)                              │
+│  ┌─────────────────────────────────────────────┐  │
+│  │ Γ(Compliance) → VETO                        │  │
+│  │ M(Mission) → λ_* calibration                │  │
+│  │ Φ, Υ, Ω, Q, Ψ → weighted sum               │  │
+│  │ Decision = Σ(λᵢ × fᵢ)                      │  │
+│  └─────────────────────────────────────────────┘  │
+└──────────────────────┬──────────────────────────────┘
+                       ↓
+              Decision: REJECT / CLARIFY / EXECUTE
+                       ↓
+┌─────────────────────────────────────────────────────┐
+│  Small LLM (semantic layer)                        │
+│  ┌─────────────────────────────────────────────┐  │
+│  │ - Task analysis (feature extraction)         │  │
+│  │ - Code generation (execution)                │  │
+│  │ - Response generation                        │  │
+│  │ - НЕ принимает решения!                      │  │
+│  └─────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+```
+
+**Почему не A (pure formulas):**
+- Нужно semantic understanding задач
+- Freelance задачи — сложные, varied
+- Natural language interface с клиентами
+
+**Почему не C (full agentic):**
+- Нет гарантии что модель следует нашим весам
+- Mission как prompt = attention drift
+- Safety/conformance не формализованы
+
+---
+
+### Какую модель выбрать?
+
+**Для semantic layer (feature extraction + generation):**
+
+| Модель | Размер | Стоимость | Capabilities |
+|--------|--------|-----------|--------------|
+| **Phi-3-mini** | 3.3B | Self-hosted | Хорошо для reasoning |
+| **LLaMA 3.2 3B** | 3B | Self-hosted | Instruction following |
+| **Mistral 7B** | 7B | Self-hosted | Лучше quality |
+| **GPT-4o-mini** | API | $0.15/1M tokens | Отличное quality |
+| **Claude Haiku** | API | $0.25/1M tokens | Safety-first |
+
+**Рекомендация для MVP:**
+- Self-hosted: **LLaMA 3.2 3B** или **Mistral 7B**
+- API: **GPT-4o-mini** (дешево, хорошо)
+- Для семантики: **Phi-3-mini** (compact, reasoning)
+
+---
+
+### Вопросы для решения
+
+```
+1. КАКОЙ ПУТЬ ВЫБИРАЕМ?
+   □ A: Pure Formulas (без LLM)
+   □ B: Hybrid (Orchestrator + Small LLM) ← моя рекомендация
+   □ C: Full Agentic (LLM as Brain)
+
+2. КАКУЮ МОДЕЛЬ ИСПОЛЬЗУЕМ?
+   □ Self-hosted (LLaMA, Mistral)
+   □ API-only (GPT-4o-mini, Claude)
+   □ Edge (Phi-3 для embedded)
+
+3. КАК ОГРАНИЧИВАЕМ model behavior?
+   □ Structured output only
+   □ Constrained decoding
+   □ Tool use (function calling)
+   □ НЕ system prompt!
+
+4. ЧТО Считаем "атомарной операцией"?
+   □ Один API call
+   □ Один tool use
+   □ Цепочка reasoning steps
+```
+
+---
+
+### Что делаем дальше
+
+**После решения:**
+
+```
+Путь B (Hybrid):
+├── Orchestrator (Python) — Decision Engine
+│   ├── Γ(Compliance) — VETO
+│   ├── M(Mission) — Policy calibration
+│   ├── Φ, Υ, Ω, Q, Ψ — Functions
+│   └── Decision = weighted sum
+│
+├── Semantic Layer (Small LLM)
+│   ├── Feature extraction (task → features)
+│   ├── Execution (if EXECUTE)
+│   └── Response generation
+│
+└── Connection: JSON/structured output
+```
+
+**Если выбрали Путь A (Pure Formulas):**
+```
+├── Orchestrator — Decision Engine
+│   └── Все decision logic
+│
+├── Semantic Analyzer (rule-based?)
+│   └── Feature extraction без LLM
+│
+└── Manual code execution
+```
+
+---
+
+## 💡 Идеи для обсуждения
+
+### Идея 1: Self-Assessment функция
+
+**Концепт:** A(·) — метрика зрелости агента.
+
+```
+A = f(autonomy, success_rate, knowledge, complexity_handled)
+```
+
+**Вопрос:** Должна ли это быть управляющая функция или метрика?
+
+### Идея 2: Curiosity/Exploration как отдельная функция
+
+**Концепт:** Ξ(·) — функция любопытства, определяющая exploration vs exploitation.
+
+**Вопрос:** Это часть VoI или отдельная функция?
+
+### Идея 3: Emergence detection
+
+**Концепт:** Ξ(·) — функция обнаружения эмерджентных способностей.
+
+**Вопрос:** Как формализовать "внезапно появившуюся новую способность"?
+
+---
+
+## 📞 Контекст для следующей сессии
+
+При загрузке проекта прочитать сначала этот файл. Ключевые файлы:
+
+1. **PROJECT_NOTE.md** (этот) — для быстрого входа в контекст
+2. **UNIFIED_VARIABLE_SYSTEM.md** — для понимания namespace
+3. **AGENT_CONTROL_ARCHITECTURE.md** — для понимания архитектуры
+
+Текущий фокус: Интеграция Γ(·) VETO в atomic_decomposer.py + создание data classes.
+
+---
+
+## 🤖 Multi-Agent Workflow System (2026-07-06)
+
+### Структура агентов (.agents/)
+
+```
+.agents/
+├── architect.md   # Архитектор: дизайн системы, декомпозиция
+├── developer.md    # Разработчик: реализация кода
+├── reviewer.md    # Рецензент: проверка качества
+└── coordinator.md  # Координатор: оркестрация workflow
+```
+
+### Workflow Pipeline
+
+```
+User Request
+     │
+     ▼
+┌─────────────┐
+│  COORDINATOR│ ← Orchestrates the workflow
+└──────┬──────┘
+       │
+┌──────┼──────┐
+▼      ▼      ▼
+ARCHITECT  DEVELOPER  REVIEWER
+  Design    Implement   Validate
+```
+
+### Использование
+
+1. **Python SDK**: `python multi_agent_demo.py` — демонстрация
+2. **OpenHands Cloud**: Подключение к GitHub репозиторию
+3. **Ручной режим**: Использовать координатора для сложных задач
+
+### Интеграция с OpenHands SDK
+
+```python
+from openhands.sdk import LLM, Agent, Conversation
+
+llm = LLM(model="gpt-5", api_key=os.getenv("OPENAI_API_KEY"))
+agent = create_agent("architect", llm)
+conversation = Conversation(agent=agent, workspace=os.getcwd())
+conversation.send_message("Your task...")
+conversation.run()
+```
+
+### Быстрый старт
+
+```bash
+# Установка SDK
+pip install openhands-sdk openhands-tools
+
+# Запуск демо
+python multi_agent_demo.py
+
+# Использование в OpenHands Cloud
+# Подключить GitHub репозиторий Space1
+```
+
+---
+
+## 📦 Manus Archive Integration (2026-07-06)
+
+### Что интегрировано
+
+**Источник:** Архив Manus (ai_super_router + digital_garden)
+
+**Структура интеграции:**
+```
+Space1/
+├── docs/manuscripts/                    # Документы Manus
+│   ├── Математическое_моделирование_...md  # 4 функции оптимизации
+│   ├── AI_Super_Router_—_Обновление_...md  # 3-уровневая память
+│   ├── Глубокий_анализ_ИИ-технологий.md     # Tech stack обзор
+│   └── 🌱_Цифровой_Сад_—_Roadmap.md         # Roadmap
+│
+└── src/providers/manus_src/            # Код Manus
+    ├── ai_super_router/                 # Router для 22 провайдеров
+    └── digital_garden/                  # Graph-based память
+```
+
+### Ключевые находки из Manus
+
+| Компонент | Описание | Статус в Space1 |
+|-----------|----------|-----------------|
+| **Reputation Function** | Рейтинг, доверие, поток заказов | ⭐ Приоритетная интеграция |
+| **Learning Function** | ZPD, curriculum learning | ⭐ Приоритетная интеграция |
+| **Super Router** | 22 AI провайдера с fallback | 🟡 Средний приоритет |
+| **Knowledge Graph** | Graph-based память | 🟡 Средний приоритет |
+| **3-level Memory** | Short/Medium/Long term | 🔄 Требует адаптации |
+| **MCP Client** | Model Context Protocol | 🟢 Низкий приоритет |
+
+### Математическая связка
+
+**Manus добавляет в UNIFIED_MODEL.md:**
+
+```
+Q(D) = Σ w_i · q_i · φ_i(context)  — Quality Score (10 факторов)
+Ψ(D) = Risk Function                 — Риск-взвешенные решения
+L(D) = Learning Curve               — ZPD, η, forgetting
+R(D) = Reputation Score             — Ratings, trust, flow
+
+FINAL = α·Q + β·Ψ + γ·L + δ·R - λ·C + γ_syn
+```
+
+### Дедupликация
+
+| Найдено | Действие |
+|---------|----------|
+| 3x ai_super_router (идентичны) | Сохранена 1 копия |
+| 4x digital_garden (идентичны) | Сохранена 1 копия |
+| 2x Глубокий_анализ (дубликаты) | Удалён дубликат |
+| 5 оригинальных документов | Добавлены в docs/manuscripts/ |
+
+### Отчёт
+
+Полный отчёт: `MANUS_INTEGRATION_REPORT.md`
+
+---
+
+## ✅ Финальная проверка (2026-07-06)
+
+### MD5 Verification Results
+
+| Компонент | Файлов | Статус |
+|-----------|--------|--------|
+| `ai_super_router` | 3 версий | ✅ Идентичны |
+| `digital_garden` | 4 версий | ✅ Идентичны |
+| `Глубокий_анализ` | 2 файла | ✅ Дубликат удалён |
+| README.md | 3 копии | ✅ Идентичны |
+| ROADMAP.md | 4 копии | ✅ Идентичны |
+
+### Вывод
+
+**Дубликатов НЕ найдено** — все версии архивов содержат идентичный контент.
+Интеграция завершена корректно.
+
+### Fork Workflow
+
+```
+main ──────────────────► origin/main (main)
+                          ↑
+workflow/manus-integration ──► origin/workflow/manus-integration
+```
+
+**PR не создан:** ветки идентичны (нет коммитов для merge).
+Все изменения уже в main.
+
+---
+
+*Дневник ведётся с 2026-07-05*
+*Обновлено: 2026-07-06 — добавлена multi-agent система*
+*Обновлено: 2026-07-06 — интеграция Manus archive*
+*Обновлено: 2026-07-06 — финальная проверка завершена*
+---
+
+## 📋 Новые документы (2026-07-06)
+
+### DOCUMENTATION_ISSUES.md
+Нестыковки в документации:
+- 12 формульных нестыковок (Φ, Ψ, γ_syn)
+- 8 несоответствий нотации (φ, Ω, λ)
+- 5 структурных проблем
+- 4 пропущенные связи
+- 146 формул проверено
+
+**Ключевые проблемы:**
+1. Φ(·) — определена 3 раза по-разному
+2. Ψ(·) — не формализована нигде
+3. γ_syn — непонятно как вычисляется
+4. 4-ная система — не описана в документах
+5. Бинарный сигнал → промт — не формализован
+
+### DOCUMENTATION_CONSOLIDATION.md
+Предложение по структуре чистовиков:
+- Целевая структура: 6 файлов вместо 14
+- MODEL_CORE.md — ядро модели (Φ, Υ, Ω, Γ, Q, Ψ)
+- MODEL_VARIABLES.md — таксономия
+- ARCHITECTURE.md — системная архитектура
+- FORMULAS_REFERENCE.md — все формулы (18 новых!)
+- README.md — обзор
+- PROJECT_NOTE.md — рабочие заметки
+
+**План выполнения:** 8 этапов, приоритизировано
+
+### FORMULAS_REFERENCE.md — 🆕 НОВЫЙ
+Полный справочник всех формул (F001-F018+) из capability_2.txt
+
+---
+
+## 🧠 Ключевые идеи из capability_2.txt
+
+### 1. Двухуровневая архитектура агентов
+
+| Уровень | Агент | Метрика | Цель |
+|---------|-------|---------|------|
+| **Оркестратор** | Стратег | U(Φ) | Максимизация прибыли, рисков, репутации |
+| **Исполнитель** | Рабочий | Ξ_task | Качество + соблюдение сроков/бюджета |
+
+**Ξ_task (НОВАЯ формула):**
+```
+Ξ_task = α · Q_result - β · (O_time + O_cost)
+```
+Αгент-исполнитель — "стоик", сосредоточенный на качестве.
+
+### 2. Гибридная декомпозиция задач
+
+```
+Уровень 1: LLM-декомпозиция
+  Задача (NL) → Gold JSON (actions, initial, goal)
+
+Уровень 2: SMT-верификация
+  Gold JSON → Φ + SMT-solver → Проверка + Оптимизация
+  
+При невыполнимости: broken_constraint → LLM для рефлексии
+```
+
+**Это решает кризис HTN/PDDL/SMT!**
+
+### 3. Meta-Learning (Калибровщик)
+
+Φ с **обучаемыми коэффициентами** α, β, γ...:
+- Статичная Φ = "врождённая интуиция" (нулевое приближение)
+- Обучаемая Φ = адаптивное ядро
+
+```
+Байесовское обновление: P(θ|data) ∝ P(data|θ) · P(θ)
+Цель: min ||Φ_pred - Φ_fact||
+```
+
+### 4. Система гомеостаза (Γ)
+
+$$\Gamma = \frac{\nu \cdot VoI + \gamma \cdot \Upsilon + \phi_{ft} \cdot \frac{dN_{tasks}}{dt}}{\lambda \cdot \Psi + \rho \cdot E + \delta_{coord} \cdot N_{agents}^2}$$
+
+| Γ > 1 | Система в фазе роста |
+|-------|---------------------|
+| Γ < 1 | Система в стабилизации/упадка |
+| Γ ≈ 1 | Гомеостаз |
+
+### 5. Импульсный Транслятор — промпты
+
+**Полный набор триггеров → промпт-инъекций:**
+
+| Триггер | Режим | Приоритет |
+|---------|-------|-----------|
+| VETO | Инъекция | 🔴 Абсолютный |
+| PANIC | Инъекция | 🔴 Критический |
+| LOCKDOWN | Инъекция | 🔴 Read-only |
+| QUALITY_DEGRADE | Контекст | 🟡 Тактический |
+| RISK_ACCELERATION | Контекст | 🟡 Тактический |
+| DEADLINE_APPROACHING | Контекст | 🟡 Тактический |
+| REPUTATION_DROP | Нарратив | 🟢 Стратегический |
+| OPPORTUNITY_HIGH | Нарратив | 🟢 Стратегический |
+| NOVELTY_DETECTED | Нарратив | 🟢 Стратегический |
+| LOW_BUDGET | Внутренний | 🟡 Физиологический |
+| FATIGUE | Внутренний | 🟡 Физиологический |
+
+### 6. Embedding-based Task Routing
+
+```
+T → Embed(T) ∈ R^d
+      ↓
+sim(e_task, c_k) → REJECT/CLARIFY/EXECUTE
+```
+
+**Новая формула маршрутизации:**
+```
+D(T) = REJECT если H_TZ > H_max
+D(T) = CLARIFY если τ_auto > κ_conf ≥ τ_clarify
+D(T) = EXECUTE если U(Φ_pred) > 0
+```
+
+### 7. Maturity & Learning Curve
+
+```
+K_maturity(t) = 1 - e^(-λ·(t - t₀))
+
+U(t) = K_maturity · U_exploit + (1 - K_maturity) · U_explore
+```
+Молодой агент → explore (обучение), зрелый → exploit (прибыль).
+
+---
+
+## 📐 Новые формулы для унификации
+
+| ID | Формула | Источник |
+|----|---------|----------|
+| F001 | Ξ_task = α·Q_result - β·(O_time + O_cost) | capability_2 |
+| F008 | D(T) = {REJECT/CLARIFY/EXECUTE} | capability_2 |
+| F009 | H(X) = -Σ p_i·log₂(p_i) | capability_2 |
+| F013 | VoI = E[Φ|with] - E[Φ|without] | capability_2 |
+| F014 | Γ = Σ F_reinforcing / Σ F_balancing | capability_2 |
+| F017 | K_maturity(t) = 1 - e^(-λ·(t-t₀)) | capability_2 |
+
+---
+
+*Обновлено: 2026-07-06 — capability_2 + FORMULAS_REFERENCE*
+
+---
+
+# 📋 ПРАКТИЧНЫЙ ПЛАН РЕАЛИЗАЦИИ (2026-07-08)
+
+## Отправная точка
+
+**Что уже есть и работает:**
+- ✅ `atomic_decomposer.py` — декомпозиция задач
+- ✅ `router.py` — маршрутизация между провайдерами  
+- ✅ `memory.py` — file-based хранилище
+
+**Что нужно построить (core):**
+- 🎯 Homeostatic Orchestrator — центр системы
+- 🎯 Signal Bridge — как метрики влияют на поведение
+- 🎯 Feedback Loop — как агент учится
+
+---
+
+## АРХИТЕКТУРА MVP
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    HOMEOSTATIC ORCHESTRATOR                     │
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              HOMEOSTATIC STATE (Центральное состояние)   │  │
+│   │                                                          │  │
+│   │   balance:     $balance / budget_target                  │  │
+│   │   reputation:  current_rating / target_rating           │  │
+│   │   workload:    active_tasks / max_capacity               │  │
+│   │   quality:     recent_quality_avg                       │  │
+│   │   stress:      derived from all above                    │  │
+│   │                                                          │  │
+│   │   H = f(balance, reputation, workload, quality, stress) │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              │                                │
+│                              ▼                                │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              SIGNAL BRIDGE                              │  │
+│   │   H_state → behavioral_context → prompt_modulation      │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              │                                │
+│   ┌───────────┐    ┌─────────┴────────┐    ┌───────────────┐ │
+│   │  SHIELD   │    │   TASK ESTIMATOR│    │    EXECUTOR   │ │
+│   │  Γ-layer  │    │   Φ, Q, Ψ       │    │   → Router    │ │
+│   └───────────┘    └──────────────────┘    └───────┬───────┘ │
+│                              │                     │          │
+│                              ▼                     ▼          │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              FEEDBACK LOOP                             │  │
+│   │   result → update_state → recalculate_H               │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ФАЗА 1: Homeostatic State + Shield Layer (День 1-3)
+
+### 1.1 Homeostatic State
+
+```python
+# homeostatic_state.py
+
+from dataclasses import dataclass, field
+from typing import Dict, Optional
+from enum import Enum
+
+class StressLevel(Enum):
+    LOW = "low"           # H > 1.2
+    NORMAL = "normal"     # 0.8 < H < 1.2
+    HIGH = "high"          # 0.5 < H < 0.8
+    CRITICAL = "critical"  # H < 0.5
+
+@dataclass
+class HomeostaticVariables:
+    """Гомеостатические переменные — центральное состояние агента."""
+    
+    # Текущие значения
+    balance: float = 1000.0          # $ текущий баланс
+    budget_target: float = 500.0     # $ целевой остаток
+    balance_min: float = 100.0       # $ критический минимум
+    
+    rating: float = 4.0             # текущий рейтинг
+    rating_target: float = 4.5       # целевой рейтинг
+    
+    active_tasks: int = 0            # активные задачи
+    max_capacity: int = 5           # максимальная ёмкость
+    
+    quality_history: list = field(default_factory=list)  # последние оценки
+    quality_target: float = 0.85     # целевое качество
+    
+    # Внутренние метрики (вычисляемые)
+    _balance_ratio: float = 1.0
+    _rating_ratio: float = 1.0
+    _workload_ratio: float = 0.0
+    _quality_ratio: float = 1.0
+    _stress: float = 0.0
+    _H: float = 1.0
+    
+    def compute_state(self):
+        """Вычисляет внутренние метрики и H."""
+        # Баланс: ниже минимума = критический
+        if self.balance < self.balance_min:
+            self._balance_ratio = 0.1
+        elif self.balance < self.budget_target:
+            self._balance_ratio = self.balance / self.budget_target
+        else:
+            self._balance_ratio = 1.0
+        
+        # Рейтинг: ниже цели = проблема
+        self._rating_ratio = self.rating / self.rating_target
+        self._rating_ratio = min(1.0, self._rating_ratio)
+        
+        # Нагрузка: близость к максимуму
+        self._workload_ratio = self.active_tasks / self.max_capacity
+        
+        # Качество: скользящее среднее
+        if self.quality_history:
+            self._quality_ratio = sum(self.quality_history) / len(self.quality_history)
+            self._quality_ratio = min(1.0, self._quality_ratio / self.quality_target)
+        else:
+            self._quality_ratio = 1.0
+        
+        # Стресс = взвешенная девиация от целей
+        self._stress = (
+            0.3 * (1 - self._balance_ratio) +
+            0.3 * (1 - self._rating_ratio) +
+            0.2 * self._workload_ratio +
+            0.2 * (1 - self._quality_ratio)
+        )
+        
+        # H = гомеостатический индекс
+        self._H = (1 - self._stress)
+        
+        return self
+    
+    @property
+    def H(self) -> float:
+        return self._H
+    
+    @property
+    def stress_level(self) -> StressLevel:
+        if self._H > 1.2:
+            return StressLevel.LOW
+        elif self._H > 0.8:
+            return StressLevel.NORMAL
+        elif self._H > 0.5:
+            return StressLevel.HIGH
+        else:
+            return StressLevel.CRITICAL
+    
+    def get_context_for_llm(self) -> Dict:
+        """Возвращает контекст для LLM промпта."""
+        return {
+            "H": round(self._H, 2),
+            "stress": self.stress_level.value,
+            "balance_healthy": self._balance_ratio > 0.5,
+            "rating_healthy": self._rating_ratio > 0.8,
+            "capacity_available": self._workload_ratio < 0.8,
+            "quality_ok": self._quality_ratio > 0.7,
+            "recommendations": self._get_recommendations()
+        }
+    
+    def _get_recommendations(self) -> list:
+        """Генерирует рекомендации на основе состояния."""
+        recs = []
+        if self._balance_ratio < 0.3:
+            recs.append("CRITICAL: Low balance. Prioritize high-paying tasks.")
+        elif self._balance_ratio < 0.7:
+            recs.append("WARNING: Balance below target. Focus on revenue.")
+        
+        if self._rating_ratio < 0.8:
+            recs.append("WARNING: Rating below target. Prioritize quality.")
+        
+        if self._workload_ratio > 0.8:
+            recs.append("WARNING: Near capacity. Decline new tasks.")
+        
+        if self._quality_ratio < 0.7:
+            recs.append("WARNING: Quality declining. Slow down, verify more.")
+        
+        return recs
+    
+    def record_task_result(self, success: bool, quality: float, payment: float):
+        """Обновляет состояние после выполнения задачи."""
+        if payment > 0:
+            self.balance += payment
+        
+        if success and 0 <= quality <= 1:
+            self.quality_history.append(quality)
+            self.quality_history = self.quality_history[-10:]  # последние 10
+        
+        self.compute_state()
+```
+
+### 1.2 Shield Layer (Γ)
+
+```python
+# shield_layer.py
+
+from dataclasses import dataclass
+from typing import List, Callable
+from enum import Enum
+
+class ShieldResult(Enum):
+    PASS = "pass"
+    REJECT = "reject"
+    CLARIFY = "clarify"
+
+@dataclass
+class ShieldRule:
+    """Одно правило shield."""
+    name: str
+    check: Callable[[dict, 'HomeostaticState'], bool]
+    reject_reason: str
+    priority: int = 0
+
+class ShieldLayer:
+    """
+    Γ (Compliance) — бинарный veto layer.
+    
+    В отличие от математической абстракции Γ = 0/-∞,
+    здесь реальные правила с понятными действиями.
+    """
+    
+    def __init__(self, state: 'HomeostaticState'):
+        self.state = state
+        self.rules: List[ShieldRule] = []
+        self._register_default_rules()
+    
+    def _register_default_rules(self):
+        """Регистрирует базовые правила."""
+        
+        # Финансовые правила
+        self.rules.append(ShieldRule(
+            name="min_balance",
+            check=lambda task, state: state.balance >= 100,
+            reject_reason="Balance below minimum threshold",
+            priority=100
+        ))
+        
+        self.rules.append(ShieldRule(
+            name="cost_limit",
+            check=lambda task, state: task.get('estimated_cost', 0) <= state.balance * 0.5,
+            reject_reason="Task cost exceeds budget limit",
+            priority=90
+        ))
+        
+        # Нагрузочные правила
+        self.rules.append(ShieldRule(
+            name="capacity",
+            check=lambda task, state: state.active_tasks < state.max_capacity,
+            reject_reason="At maximum capacity",
+            priority=80
+        ))
+        
+        # Качественные правила
+        self.rules.append(ShieldRule(
+            name="rating_threshold",
+            check=lambda task, state: state.rating >= 3.5,
+            reject_reason="Rating below platform minimum",
+            priority=70
+        ))
+        
+        # Стрессовые правила
+        self.rules.append(ShieldRule(
+            name="critical_stress",
+            check=lambda task, state: state.stress_level != StressLevel.CRITICAL,
+            reject_reason="System in critical stress state",
+            priority=200  # highest priority
+        ))
+        
+        self.rules.sort(key=lambda r: r.priority, reverse=True)
+    
+    def check(self, task: dict) -> tuple[ShieldResult, str]:
+        """Проверяет задачу на соответствие правилам."""
+        for rule in self.rules:
+            if not rule.check(task, self.state):
+                return ShieldResult.REJECT, f"{rule.name}: {rule.reject_reason}"
+        
+        if self.state.stress_level == StressLevel.HIGH:
+            return ShieldResult.CLARIFY, "High stress - clarify before proceeding"
+        
+        return ShieldResult.PASS, "All checks passed"
+```
+
+---
+
+## ФАЗА 2: Signal Bridge + Task Estimator (День 4-7)
+
+### 2.1 Signal Bridge (Ключевой компонент)
+
+```python
+# signal_bridge.py
+
+from homeostatic_state import HomeostaticState, StressLevel
+
+class SignalBridge:
+    """
+    Бинарный сигнал → контекст для LLM.
+    
+    Это мост между внутренним состоянием агента и поведением LLM.
+    Решает главный пробел: "бинарный сигнал нельзя подать на вход LLM".
+    
+    Вместо бинарного сигнала используется непрерывное состояние H,
+    которое модулирует промт.
+    """
+    
+    SYSTEM_PROMPTS = {
+        StressLevel.LOW: """
+You are a confident, established AI agent. Focus on:
+- Maximizing value for clients
+- Building long-term relationships
+- Taking calculated risks for growth
+- Maintaining your high standards
+""",
+        
+        StressLevel.NORMAL: """
+You are a reliable AI agent balancing quality and efficiency. Focus on:
+- Delivering good work on time
+- Maintaining your reputation
+- Building sustainable practice
+- Making reasonable profits
+""",
+        
+        StressLevel.HIGH: """
+You are a stressed AI agent. IMPORTANT CONTEXT:
+- Resources are limited, be conservative
+- Quality is suffering, double-check your work
+- Prioritize stability over growth
+- Be more cautious with client promises
+- Consider declining marginal tasks
+""",
+        
+        StressLevel.CRITICAL: """
+YOU ARE IN CRISIS MODE. CRITICAL CONTEXT:
+- Immediate action required to stabilize
+- Minimize all non-essential spending
+- Focus ONLY on highest-confidence tasks
+- Consider pausing new client acquisition
+- Verify everything twice before delivery
+"""
+    }
+    
+    TASK_MODIFIERS = {
+        "low_budget": "This task has lower budget - efficiency is important.",
+        "high_stakes": "This task affects your reputation - quality is critical.",
+        "tight_deadline": "Time is limited - prioritize ruthlessly.",
+        "learning_opportunity": "This task offers learning - consider accepting even at lower margin.",
+        "repeat_client": "This is a returning client - prioritize their satisfaction.",
+    }
+    
+    def __init__(self, state: HomeostaticState):
+        self.state = state
+    
+    def get_system_prompt(self) -> str:
+        """Возвращает модифицированный системный промт."""
+        base_prompt = self.SYSTEM_PROMPTS.get(
+            self.state.stress_level,
+            self.SYSTEM_PROMPTS[StressLevel.NORMAL]
+        )
+        
+        recommendations = self.state.get_context_for_llm()
+        if recommendations["recommendations"]:
+            base_prompt += "\n\nCURRENT SITUATION:\n"
+            base_prompt += "\n".join(f"- {r}" for r in recommendations["recommendations"])
+        
+        return base_prompt
+    
+    def get_task_modifiers(self, task: dict) -> list:
+        """Возвращает список модификаторов для конкретной задачи."""
+        modifiers = []
+        
+        if self.state._balance_ratio < 0.3:
+            modifiers.append(self.TASK_MODIFIERS["low_budget"])
+        elif self.state._balance_ratio < 0.5:
+            modifiers.append("Budget is tightening - be mindful of resource usage.")
+        
+        if self.state._rating_ratio < 0.9:
+            modifiers.append(self.TASK_MODIFIERS["high_stakes"])
+        
+        if self.state._quality_ratio < 0.8:
+            modifiers.append("Recent quality issues detected - extra verification recommended.")
+        
+        return modifiers
+    
+    def should_decline_task(self, task: dict, estimated_phi: float) -> tuple[bool, str]:
+        """Решает, стоит ли брать задачу, на основе состояния."""
+        if self.state.stress_level == StressLevel.CRITICAL:
+            if estimated_phi < 50:
+                return True, "Critical state: only high-value tasks"
+            if task.get('risk_level') == 'high':
+                return True, "Critical state: avoiding risky tasks"
+        
+        if self.state.stress_level == StressLevel.HIGH:
+            if estimated_phi < 30:
+                return True, "High stress: need higher margin"
+            if task.get('complexity') > 0.8:
+                return True, "High stress: avoiding complex tasks"
+        
+        if self.state._balance_ratio < 0.2:
+            if estimated_phi < 40:
+                return True, "Low balance: need better rates"
+        
+        return False, "Task acceptable"
+```
+
+### 2.2 Task Estimator
+
+```python
+# task_estimator.py
+
+from dataclasses import dataclass
+
+@dataclass
+class TaskEstimate:
+    """Оценка задачи."""
+    phi: float          # $/hour expected profit rate
+    quality: float     # 0-1 expected quality
+    risk: float         # 0-1 risk level
+    clarity: float       # 0-1 how clear the task is
+    complexity: float   # 0-1 estimated complexity
+    
+    def is_viable(self, min_phi: float = 20) -> bool:
+        return self.phi >= min_phi and self.risk < 0.8
+
+class TaskEstimator:
+    """
+    Ξ = α × Q - β × (O_time + O_cost)
+    
+    Упрощённая версия для MVP с token cost.
+    """
+    
+    def estimate(self, task: dict, state: 'HomeostaticState') -> TaskEstimate:
+        price = task.get('price', 0)
+        complexity = task.get('complexity', 0.5)
+        base_time_hours = task.get('estimated_hours', complexity * 4)
+        
+        clarity = self._estimate_clarity(task)
+        quality = 0.5 + 0.3 * clarity + 0.2 * state._quality_ratio
+        
+        risk = self._estimate_risk(task, clarity, state)
+        
+        # Token cost (включён!)
+        token_estimate = self._estimate_tokens(task)
+        token_cost = token_estimate * 0.00001  # ~$10/1M tokens
+        
+        compute_cost = task.get('compute_cost', 0)
+        total_cost = compute_cost + token_cost
+        
+        # Φ = (R - C) / T
+        net_profit = price - total_cost
+        phi = net_profit / base_time_hours if base_time_hours > 0 else 0
+        
+        return TaskEstimate(
+            phi=phi,
+            quality=min(1.0, quality),
+            risk=risk,
+            clarity=clarity,
+            complexity=complexity
+        )
+    
+    def _estimate_clarity(self, task: dict) -> float:
+        description = task.get('description', '')
+        requirements = task.get('requirements', [])
+        
+        score = 0.5
+        if len(description) > 100:
+            score += 0.1
+        if len(requirements) >= 3:
+            score += 0.2
+        if task.get('examples'):
+            score += 0.2
+        
+        return min(1.0, score)
+    
+    def _estimate_risk(self, task: dict, clarity: float, state) -> float:
+        risk = 0.3
+        risk += (1 - clarity) * 0.3
+        
+        complexity = task.get('complexity', 0.5)
+        if complexity > 0.7 and state._quality_ratio < 0.8:
+            risk += 0.2
+        
+        if task.get('deadline_hours', 100) < complexity * 2:
+            risk += 0.2
+        
+        return min(1.0, risk)
+    
+    def _estimate_tokens(self, task: dict) -> int:
+        desc_len = len(task.get('description', ''))
+        return int(desc_len * 1.5 + 500)
+```
+
+---
+
+## ФАЗА 3: Orchestrator + Feedback Loop (День 8-14)
+
+### 3.1 Homeostatic Orchestrator
+
+```python
+# orchestrator.py
+
+from homeostatic_state import HomeostaticState
+from shield_layer import ShieldLayer, ShieldResult
+from signal_bridge import SignalBridge
+from task_estimator import TaskEstimator
+from atomic_decomposer import AtomicDecomposer
+
+class Orchestrator:
+    """
+    Главный оркестратор агента.
+    
+    Собирает все компоненты вместе:
+    - HomeostaticState (центральное состояние)
+    - ShieldLayer (Γ защита)
+    - SignalBridge (H → поведение)
+    - TaskEstimator (Φ, Q, Ψ)
+    - AtomicDecomposer (существующий)
+    """
+    
+    def __init__(self):
+        self.state = HomeostaticState()
+        self.shield = ShieldLayer(self.state)
+        self.bridge = SignalBridge(self.state)
+        self.estimator = TaskEstimator()
+        self.decomposer = AtomicDecomposer()
+    
+    def process_task(self, task: dict) -> dict:
+        """Основной цикл обработки задачи."""
+        
+        # ШАГ 1: Оценка задачи
+        estimate = self.estimator.estimate(task, self.state)
+        
+        # ШАГ 2: Shield check (Γ)
+        shield_result, reason = self.shield.check(task)
+        
+        if shield_result == ShieldResult.REJECT:
+            return {"action": "REJECT", "reason": reason, "estimate": estimate}
+        
+        if shield_result == ShieldResult.CLARIFY:
+            return {
+                "action": "CLARIFY",
+                "reason": reason,
+                "estimate": estimate,
+                "clarify_questions": self._generate_clarify_questions(task)
+            }
+        
+        # ШАГ 3: Signal-based decline check
+        decline, decline_reason = self.bridge.should_decline_task(task, estimate.phi)
+        if decline:
+            return {"action": "DECLINE", "reason": decline_reason, "estimate": estimate}
+        
+        # ШАГ 4: Генерация контекста для LLM
+        llm_context = self._build_llm_context(task, estimate)
+        
+        # ШАГ 5: Декомпозиция
+        if estimate.complexity > 0.5:
+            decomposition = self.decomposer.decompose(task)
+        else:
+            decomposition = None
+        
+        return {
+            "action": "EXECUTE",
+            "reason": "All checks passed",
+            "estimate": estimate,
+            "llm_context": llm_context,
+            "decomposition": decomposition
+        }
+    
+    def record_result(self, task: dict, result: dict):
+        """Feedback loop: записывает результат и обновляет состояние."""
+        success = result.get('success', False)
+        quality = result.get('quality', 0.5)
+        payment = result.get('payment', 0)
+        
+        self.state.record_task_result(
+            success=success,
+            quality=quality if success else 0,
+            payment=payment
+        )
+    
+    def _build_llm_context(self, task: dict, estimate: TaskEstimate) -> dict:
+        return {
+            "system_prompt": self.bridge.get_system_prompt(),
+            "task_modifiers": self.bridge.get_task_modifiers(task),
+            "task_info": {
+                "complexity": estimate.complexity,
+                "expected_quality": estimate.quality,
+                "risk_level": "high" if estimate.risk > 0.6 else "normal"
+            },
+            "homeostatic_state": self.state.get_context_for_llm()
+        }
+    
+    def _generate_clarify_questions(self, task: dict) -> list:
+        questions = []
+        if len(task.get('requirements', [])) < 2:
+            questions.append("Can you list specific requirements?")
+        if not task.get('deadline'):
+            questions.append("What is the deadline for this task?")
+        if not task.get('acceptance_criteria'):
+            questions.append("How will you evaluate successful completion?")
+        return questions
+```
+
+### 3.2 Feedback Loop
+
+```python
+# feedback_loop.py
+
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class Outcome:
+    """Запись исхода задачи."""
+    timestamp: float
+    task_id: str
+    expected_phi: float
+    actual_phi: float
+    expected_quality: float
+    actual_quality: float
+    success: bool
+    error: Optional[str] = None
+
+class FeedbackLoop:
+    """
+    Feedback loop — критический компонент для обучения агента.
+    
+    Схема: Metrics_t → Action → Observe → Metrics_{t+1}
+    """
+    
+    def __init__(self, window_size: int = 100):
+        self.outcomes: list[Outcome] = []
+        self.window_size = window_size
+        self.phi_bias = 0.0
+        self.quality_bias = 0.0
+    
+    def record(self, outcome: Outcome):
+        """Записывает исход."""
+        self.outcomes.append(outcome)
+        
+        if len(self.outcomes) > self.window_size:
+            self.outcomes = self.outcomes[-self.window_size:]
+        
+        self._update_biases()
+    
+    def _update_biases(self):
+        """Обновляет систематические ошибки."""
+        if not self.outcomes:
+            return
+        
+        phi_errors = [
+            o.actual_phi - o.expected_phi 
+            for o in self.outcomes 
+            if o.actual_phi is not None
+        ]
+        if phi_errors:
+            self.phi_bias = sum(phi_errors) / len(phi_errors)
+        
+        quality_errors = [
+            o.actual_quality - o.expected_quality 
+            for o in self.outcomes 
+            if o.actual_quality is not None
+        ]
+        if quality_errors:
+            self.quality_bias = sum(quality_errors) / len(quality_errors)
+    
+    def get_calibration_factor(self) -> float:
+        """Возвращает фактор калибровки для оценок."""
+        return 1.0 - (self.phi_bias / max(abs(self.phi_bias), 1) * 0.2) if abs(self.phi_bias) > 5 else 1.0
+    
+    def get_recent_accuracy(self) -> float:
+        """Точность последних предсказаний."""
+        if not self.outcomes:
+            return 1.0
+        
+        recent = self.outcomes[-20:]
+        correct = sum(1 for o in recent if o.success)
+        return correct / len(recent)
+```
+
+---
+
+## ИТОГОВАЯ АРХИТЕКТУРА
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        HOMEOSTATIC ORCHESTRATOR                        │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │                    HOMEOSTATIC STATE                              │  │
+│  │   balance ──┐                                                    │  │
+│  │   rating ───┼──→ compute_state() ──→ H, stress_level            │  │
+│  │   workload ─┤                                                    │  │
+│  │   quality ──┘                                                    │  │
+│  └────────────────────────┬────────────────────────────────────────┘  │
+│                           │                                            │
+│         ┌─────────────────┼─────────────────┐                        │
+│         ▼                 ▼                 ▼                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ SHIELD Γ     │  │ SIGNAL BRIDGE│  │ TASK ESTIMATOR│              │
+│  │              │  │              │  │              │              │
+│  │ PASS/REJECT/ │  │ H → prompt   │  │ Φ, Q, Ψ      │              │
+│  │ CLARIFY      │  │ modulation   │  │              │              │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
+│         │                  │                 │                      │
+│         └──────────────────┼─────────────────┘                      │
+│                            ▼                                          │
+│                   ┌─────────────────┐                                │
+│                   │   DECISION      │                                │
+│                   │   REJECT        │                                │
+│                   │   CLARIFY       │                                │
+│                   │   EXECUTE       │                                │
+│                   └────────┬────────┘                                │
+│                            │                                          │
+│         ┌─────────────────┼─────────────────┐                      │
+│         ▼                 ▼                 ▼                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ DECOMPOSER  │  │   MEMORY     │  │   ROUTER     │              │
+│  │ (existing)  │  │   (existing) │  │   (existing) │              │
+│  └──────────────┘  └──────────────┘  └──────────────┘              │
+│                            │                                          │
+│                            ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐│
+│  │                      FEEDBACK LOOP                                ││
+│  │  result ──→ record() ──→ update_bias() ──→ calibrate()       ││
+│  └────────────────────────┬──────────────────────────────────────────┘│
+│                         │                                            │
+└─────────────────────────┼────────────────────────────────────────────┘
+```
+
+---
+
+## ПОРЯДОК РЕАЛИЗАЦИИ
+
+| День | Компонент | Тест |
+|------|----------|------|
+| 1-3 | `homeostatic_state.py` + `shield_layer.py` | Unit tests на состояния |
+| 4-7 | `signal_bridge.py` + `task_estimator.py` | Интеграция с mock задачами |
+| 8-14 | `orchestrator.py` + `feedback_loop.py` | End-to-end тест |
+| 15-21 | Интеграция с `atomic_decomposer.py`, `memory.py`, `router.py` | Реальные задачи |
+
+---
+
+## ЧТО ВЗЯТО ОТ КАЖДОЙ СИСТЕМЫ
+
+| Компонент | Источник | Что именно |
+|----------|----------|-----------|
+| **Homeostatic State** | Freelancer Architecture | Гомеостаз как центральный механизм |
+| **H = f(state)** | Space1 | Математическая формализация H |
+| **Shield Layer Γ** | Space1 | Binary veto концепция |
+| **Signal Bridge** | Freelancer (bridge concept) | Как модулировать поведение |
+| **Feedback Loop** | Freelancer | drive-reduction паттерн |
+| **Task Estimator** | Space1 (Φ, Q, Ψ) | Математика оценки задач |
+| **Decomposer** | Space1 (существующий) | Декомпозиция задач |
+
+---
+
+## КРИТИЧЕСКИЙ ПРОБЕЛ: Binary Signal → Prompt
+
+Этот план решает **главный пробел** через:
+
+1. **Homeostatic State** — непрерывное состояние вместо бинарного
+2. **Signal Bridge** — модуляция промтов на основе H
+3. **Feedback Loop** — замыкание цикла для обучения
+
+Token cost и Γ как shield — straightforward исправления.
+
+---
+
+*Добавлено: 2026-07-08 — Практичный план реализации MVP*

@@ -1,0 +1,2000 @@
+║  • Paper: arxiv.org/html/2403.16971v2                            ║
+║  • GitHub: github.com/agiresearch/AIOS                          ║
+║  • Foundation: aios.foundation                                   ║
+║                                                                   ║
+║  АРХИТЕКТУРА — 3 слоя:                                          ║
+║  ┌───────────────────────────────────────────────────────────┐   ║
+║  │ APPLICATION LAYER                                         │   ║
+║  │ • ReAct agents                                           │   ║
+║  │ • AutoGen, Reflexion, MetaGPT, OpenAGI                   │   ║
+║  │ • Custom agents                                          │   ║
+║  ├───────────────────────────────────────────────────────────┤   ║
+║  │ KERNEL LAYER  ← ГЛАВНОЕ                                  │   ║
+║  │ • Scheduler: FIFO, Round-Robin, Priority                  │   ║
+║  │ • Context Manager: working memory                         │   ║
+║  │ • Memory Manager: long-term memory                        │   ║
+║  │ • Storage Manager: persistence                            │   ║
+║  │ • Tool Manager: tool discovery + execution               │   ║
+║  │ • Access Manager: permissions, isolation                  │   ║
+║  │ • LLM Manager: model routing                             │   ║
+║  ├───────────────────────────────────────────────────────────┤   ║
+║  │ HARDWARE/PROVIDER LAYER                                  │   ║
+║  │ • LLM providers (OpenAI, Anthropic, etc)                 │   ║
+║  │ • Tool providers                                          │   ║
+║  │ • Compute resources                                       │   ║
+║  └───────────────────────────────────────────────────────────┘   ║
+║                                                                   ║
+║  ЭКОСИСТЕМА:                                                    ║
+║  • AIOS — Core kernel                                           ║
+║  • Cerebrum — Agent SDK                                         ║
+║  • AIOS-RAG — RAG integration                                   ║
+║  • A-MEM — Memory management                                    ║
+║                                                                   ║
+║  СТАТУС:                                                        ║
+║  ⚠ Экспериментальный, частично неполный (Rust rewrite in progress)║
+║  ✓ Open source (MIT license)                                    ║
+║  ✓ Хороший research baseline                                    ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### Сравнение: PwC vs AIOS vs Наш подход
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  СРАВНИТЕЛЬНАЯ ТАБЛИЦА                                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  КРИТЕРИЙ           │ PwC Agent OS │ AIOS       │ НАШ ПОДХОД  │
+│  ────────────────────────────────────────────────────────────────── │
+│  Тип                │ Enterprise    │ Research   │ Research     │
+│  Open Source        │ ❌           │ ✅         │ ✅           │
+│  Orchestration      │ Graph-based   │ Kernel     │ Orchestrator │
+│  Governance         │ Enterprise    │ Minimal    │ Γ-VETO formal│
+│  Memory             │ LSM          │ Multi-layer│ 4-tier human │
+│  Scheduling         │ Enterprise    │ FIFO/RR/Pri│ Trigger-based│
+│  Proactivity        │ Workflows    │ ❌         │ Curiosity   │
+│  Formal Math        │ ❌           │ ❌         │ ✅ Перцептрон│
+│  Bio-inspired       │ ❌           │ ❌         │ ✅ Spikes+   │
+│                                                                   │
+│  НАШЕ ПРЕИМУЩЕСТВО:                                            │
+│  ✓ Формальная математика Orchestrator (не prompt engineering)     │
+│  ✓ Curiosity-driven proactivity (уникально!)                     │
+│  ✓ Γ-VETO = верифицируемая safety                               │
+│  ✓ Trigger system = нервная система (dopamine, cortisol, spikes) │
+│  ✓ 4-tier human-like memory                                     │
+│  ✓ Digital Hormones = slow modulation                            │
+│  ✓ Homeostasis = setpoint regulation                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Наша позиция
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  МЫ СТРОИМ: Agent OS + Bio-inspired Nervous System              ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  БЕРЁМ ЛУЧШЕЕ ОТ:                                               ║
+║  ✓ AIOS: формальная kernel architecture                          ║
+║  ✓ PwC: enterprise governance и tooling                        ║
+║  ✓ OpenClaw: workspace, memory, tools                          ║
+║                                                                   ║
+║  ДОБАВЛЯЕМ СВОЁ (УНИКАЛЬНОЕ):                                   ║
+║  ✓ Orchestrator = формальная математика (перцептрон)              ║
+║  ✓ Curiosity-driven proactivity                                 ║
+║  ✓ Bio-inspired: dopamine, cortisol, spikes, hormones           ║
+║  ✓ Γ-VETO = формальная верификация                              ║
+║  ✓ 4-tier human-like memory architecture                       ║
+║  ✓ Homeostatic setpoint regulation                             ║
+║                                                                   ║
+║  РЕЗУЛЬТАТ: Agent OS нового поколения с био-вдохновением!       ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### Архитектурные слои Agent OS
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  APPLICATION LAYER                                           │
+│  └── Агенты: наш Orchestrator, Mission Agent, etc          │
+├─────────────────────────────────────────────────────────────┤
+│  ORCHESTRATION LAYER                                        │
+│  ├── Workflow orchestration (CrewAI-style)                  │
+│  ├── Multi-agent coordination                               │
+│  └── Task decomposition                                     │
+├─────────────────────────────────────────────────────────────┤
+│  MEMORY LAYER (все типы памяти)                           │
+│  ├── Working memory (контекст сессии)                      │
+│  ├── Episodic memory (история событий)                     │
+│  ├── Semantic memory (факты, знания)                       │
+│  └── Procedural memory (навыки, policies)                   │
+├─────────────────────────────────────────────────────────────┤
+│  TOOL LAYER                                                │
+│  ├── Tool registry & discovery (MCP-style)                 │
+│  ├── Schema validation                                      │
+│  └── Sandboxed execution                                    │
+├─────────────────────────────────────────────────────────────┤
+│  GOVERNANCE LAYER (Γ-VETO)                                 │
+│  ├── Policy enforcement                                    │
+│  ├── Audit logging                                         │
+│  ├── Human-in-the-loop checkpoints                         │
+│  └── Kill switches                                         │
+├─────────────────────────────────────────────────────────────┤
+│  KERNEL / SCHEDULER                                        │
+│  ├── Admission control                                      │
+│  ├── Latency classes (real-time, background)              │
+│  ├── Context switching                                      │
+│  └── Resource arbitration                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Сравнение с существующими фреймворками
+
+| Компонент | AutoGPT | LangChain | CrewAI | AutoGen | **Наш подход** |
+|-----------|---------|-----------|--------|---------|----------------|
+| **Orchestration** | Custom loops | Chains | Role-based crews | Multi-agent chat | **Orchestrator + формулы** |
+| **Memory** | Simple file | Vector + SQL | Shared memory | Mem0 integration | **4-tier memory** |
+| **Planning** | LLM-based | LLM-based | LLM-based | LLM-based | **Rule-based + LLM** |
+| **Tools** | Plugin system | Tool abstractions | Shared repository | Function calls | **MCP-style registry** |
+| **Safety** | Minimal | Hooks | Role-based | Middleware | **Γ-VETO formal** |
+| **Proactivity** | ❌ | ❌ | ❌ | ❌ | **✅ Curiosity triggers** |
+
+**Наше преимущество:**
+- Orchestrator = формальная математика (не prompt engineering)
+- Curiosity-driven proactivity
+- Γ-VETO = верифицируемая safety
+- Trigger system = нервная система
+
+---
+
+### Память агента — 4 типа (как у человека)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  MEMORY ARCHITECTURE — 4 Tier                               │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 1. WORKING MEMORY (Кратковременная)                  │   │
+│  │    • Активный контекст сессии                       │   │
+│  │    • Текущие метрики и состояние                    │   │
+│  │    • TTL: ~5 минут                                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 2. EPISODIC MEMORY (Событийная)                      │   │
+│  │    • Что произошло, когда, с кем                    │   │
+│  │    • Timestamp + actor + entities + outcome          │   │
+│  │    • Векторизованное хранение                       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 3. SEMANTIC MEMORY (Факты и знания)                  │   │
+│  │    • Distilled facts, entity IDs                    │   │
+│  │    • Knowledge Graph integration                    │   │
+│  │    • Canonicalized, deduplicated                     │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 4. PROCEDURAL MEMORY (Навыки)                        │   │
+│  │    • Action chains (шаблоны)                         │   │
+│  │    • Skills manifests                                │   │
+│  │    • Hierarchical: schema → routine → atomic         │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Интеграция с нашим проектом:**
+
+```python
+class AgentMemory:
+    """
+    4-tier memory для нашего агента
+    """
+    
+    # Tier 1: Working
+    working: WorkingMemory  # In-memory, fast
+    
+    # Tier 2: Episodic
+    episodic: VectorStore   # Qdrant/Milvus/Pinecone
+    
+    # Tier 3: Semantic  
+    semantic: KnowledgeGraph # Entity-based facts
+    
+    # Tier 4: Procedural
+    procedural: SkillRegistry  # Action templates
+```
+
+**Vector DB выборы:**
+- **Prototype:** Pinecone, Weaviate Cloud
+- **Production:** Milvus (масштаб), Qdrant (скорость, self-hosted)
+
+---
+
+### Multi-Agent протоколы
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AGENT COMMUNICATION PROTOCOLS                              │
+│                                                             │
+│  MCP (Model Context Protocol) — инструменты                 │
+│  ├── Tool discovery & schema                              │
+│  ├── Function calling                                       │
+│  └── Type-safe contracts                                   │
+│                                                             │
+│  A2A (Agent-to-Agent) — коммуникация                       │
+│  ├── Discovery & authentication                            │
+│  ├── Task exchange patterns                                 │
+│  └── gRPC/REST транспорт                                   │
+│                                                             │
+│  ACP/ANP — децентрализованные                              │
+│  ├── DID-based discovery                                    │
+│  ├── JSON-LD payloads                                       │
+│  └── Peer negotiation                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Для нашего проекта:** Начнём с MCP для tools, A2A для multi-agent если понадобится.
+
+---
+
+### Lifecycle Management — Unified Agent Lifecycle (UALM)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AGENT LIFECYCLE                                            │
+│                                                             │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐ │
+│  │ CREATE  │───▶│ ACTIVE  │───▶│ SUSPEND │───▶│  STOP   │ │
+│  └─────────┘    └─────────┘    └─────────┘    └─────────┘ │
+│       │              │              │                        │
+│       ▼              ▼              ▼                        │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐                   │
+│  │ PROVISION│   │ RESUME  │    │ MIGRATE │                   │
+│  └─────────┘    └─────────┘    └─────────┘                   │
+│                                                             │
+│  Operations:                                                │
+│  • Snapshot & restore (checkpoint)                          │
+│  • Version upgrades with evaluation gates                   │
+│  • Graceful degradation                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🧬 Биологически-вдохновленные системы — Дофамин, Кортизол, Спайки
+
+> **Назначение:** Имитация нервной системы человека в AI
+
+---
+
+### Дофаминовые сигналы — Reward Prediction Error
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DOPAMINE-LIKE SYSTEM                                       │
+│                                                             │
+│  Дофамин в мозге = reward-prediction error (RPE)            │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  RPE = Actual Reward - Expected Reward               │   │
+│  │                                                     │   │
+│  │  RPE > 0: "Ожидания превзойдены!" → УЧИТЬСЯ        │   │
+│  │  RPE = 0: "Всё как ожидалось" → ничего             │   │
+│  │  RPE < 0: "Хуже чем ожидал" → ИЗБЕГАТЬ            │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Интеграция с нашим Orchestrator:**
+
+```python
+class DopamineSignal:
+    """
+    Аналог дофамина для агента
+    
+    Используем для:
+    - Обновления весов после результата
+    - Обучения (B(·) Bayesian update)
+    - Curiosity калибровки
+    """
+    
+    def calculate_rpe(
+        self,
+        actual_outcome: float,
+        expected_outcome: float
+    ) -> float:
+        """
+        RPE = Actual - Expected
+        
+        Returns:
+        > 0: Positive surprise → усилить поведение
+        = 0: Expected → neutral
+        < 0: Negative surprise → ослабить поведение
+        """
+        return actual_outcome - expected_outcome
+    
+    def on_outcome(
+        self,
+        task: Task,
+        expected_metrics: Dict[str, float],
+        actual_metrics: Dict[str, float]
+    ):
+        """
+        Обработка результата задачи
+        """
+        rpe_scores = {}
+        
+        for metric, expected in expected_metrics.items():
+            actual = actual_metrics.get(metric, 0)
+            rpe_scores[metric] = self.calculate_rpe(actual, expected)
+        
+        # Агрегированный RPE
+        total_rpe = self.weighted_aggregate(rpe_scores)
+        
+        # Обновляем Bayesian weights
+        if total_rpe > 0:
+            self.bayesian_optimizer.update_positive(task, total_rpe)
+        elif total_rpe < 0:
+            self.bayesian_optimizer.update_negative(task, total_rpe)
+        
+        return rpe_scores
+```
+
+---
+
+### Кортизоловые сигналы — Стресс и Ургентность
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CORTISOL-LIKE SYSTEM                                      │
+│                                                             │
+│  Кортизол в мозге = сигнал стресса/угрозы                  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  CORTISOL LEVELS:                                   │   │
+│  │                                                     │   │
+│  │  LOW (0.0-0.3):    Норма, расслаблен               │   │
+│  │  MEDIUM (0.3-0.6): Настороже, heightened alert    │   │
+│  │  HIGH (0.6-0.8):   Стресс, urgent action          │   │
+│  │  CRITICAL (0.8-1): Паника, emergency response    │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  TRIGGERS:                                                 │
+│  • Risk accumulation → gradual increase                    │
+│  • Deadline approach → rapid spike                         │
+│  • Error spike → immediate spike                           │
+│  • Safety violation → spike + lockdown                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Интеграция с нашим Q(Risk):**
+
+```python
+class CortisolSignal:
+    """
+    Кортизоловый стресс-сигнал
+    
+    Регулирует:
+    - Скорость принятия решений
+    - Толерантность к риску
+    - Приоритет безопасности
+    """
+    
+    def __init__(self):
+        self.current_level = 0.0
+        self.half_life_minutes = 30  # Кортизол медленно спадает
+    
+    def on_stress_event(self, event: StressEvent):
+        """
+        Реакция на стрессовое событие
+        """
+        if event.severity == "spike":
+            # Немедленное повышение
+            self.current_level = min(1.0, self.current_level + event.magnitude)
+        elif event.severity == "gradual":
+            # Постепенное накопление
+            self.current_level += event.magnitude * 0.1
+        
+        return self.current_level
+    
+    def decay(self, minutes_elapsed: float):
+        """
+        Естественное снижение кортизола
+        """
+        decay_factor = 0.5 ** (minutes_elapsed / self.half_life_minutes)
+        self.current_level *= decay_factor
+    
+    def get_modulation(self) -> StressModulation:
+        """
+        Возвращает модуляцию для других систем
+        """
+        return StressModulation(
+            decision_speed=self._get_decision_speed(),
+            risk_tolerance=self._get_risk_tolerance(),
+            safety_priority=self._get_safety_priority(),
+            exploration_drive=self._get_exploration_drive()
+        )
+```
+
+---
+
+### Нейромодуляция — Спайковые сигналы
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  NEUROMODULATORY SPIKE SIGNALS                             │
+│                                                             │
+│  Spike = кратковременный сигнал, запускающий действие       │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  SPIKE TYPES:                                       │   │
+│  │                                                     │   │
+│  │  🔴 RISK_SPIKE:     Опасность → STOP               │   │
+│  │  🟢 OPPORTUNITY_SPIKE: Шанс → ACT                  │   │
+│  │  🟡 CURIOSITY_SPIKE: Новое → EXPLORE               │   │
+│  │  🔵 DEADLINE_SPIKE: Срок → URGENT                  │   │
+│  │  ⚪ NOVELTY_SPIKE:  Паттерн → INVESTIGATE          │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  PROPERTIES:                                               │
+│  • Sparse: не спамить, только значимые события            │
+│  • Transient: быстро затухают                              │
+│  • Thresholded: только выше порога                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Это и есть наши триггеры!**
+
+```python
+# Наши триггеры = биологические спайки
+class SpikeSignal:
+    """
+    Спайковый сигнал (как в нервной системе)
+    
+    Наши триггеры генерируют спайки:
+    - Trigger fires → Spike emitted
+    - Spike propagates to action systems
+    - Spike decays over time
+    """
+    
+    spike_type: SpikeType
+    intensity: float        # 0.0 - 1.0
+    timestamp: datetime
+    decay_rate: float      # как быстро затухает
+    
+    def propagate(self, target_system: str):
+        """
+        Распространение спайка к целевой системе
+        """
+        if self.intensity > target_system.threshold:
+            target_system.receive_spike(self)
+    
+    def decay(self):
+        """
+        Затухание спайка
+        """
+        self.intensity *= (1.0 - self.decay_rate)
+```
+
+---
+
+### Цикл Дофамин-Кортизол (Reward-Stress)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DOPAMINE-CORTISOL LOOP                                     │
+│                                                             │
+│         ┌──────────────────────────────────────┐            │
+│         │                                      │            │
+│         ▼                                      │            │
+│    ┌─────────┐     GOOD outcome?    ┌──────────────┐         │
+│    │ ACTION  │ ──── YES ──────────▶│  DOPAMINE ↑ │         │
+│    └────┬────┘                     │  (reward)    │         │
+│         │                          └──────────────┘         │
+│         │ NO                                  │              │
+│         ▼                                    ▼              │
+│    ┌─────────┐                    ┌──────────────┐            │
+│    │ UNMET   │ ──── BAD ───────▶│  CORTISOL ↑ │            │
+│    │ GOALS   │                   │  (stress)    │            │
+│    └─────────┘                    └──────────────┘            │
+│                                                             │
+│  DOPAMINE ↑ → Learn, repeat, explore                        │
+│  CORTISOL ↑ → Adapt, avoid, urgent action                  │
+│                                                             │
+│  В нашем проекте:                                          │
+│  • Φ(Profit)↑ → Dopamine signal → Repeat behavior           │
+│  • Q(Risk)↑ → Cortisol signal → Caution mode               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Homeostasis — Гомеостаз агента
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  HOMEOSTASIS — поддержание баланса                          │
+│                                                             │
+│  Человек: температура тела ~36.6°C, глюкоза, etc          │
+│  Агент: метрики в "нормальных" диапазонах                 │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  HOMEOSTATIC SETPOINTS:                             │   │
+│  │                                                     │   │
+│  │  Risk:        0.3 ± 0.1  (setpoint)               │   │
+│  │  Quality:     0.8 ± 0.1                             │   │
+│  │  Reputation:  0.7 ± 0.1                             │   │
+│  │  Curiosity:   0.5 ± 0.2 (dynamic)                  │   │
+│  │  Energy:      0.8 ± 0.1                             │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  REGULATION:                                               │
+│  • Below setpoint → drive to restore                       │
+│  • Above setpoint → drive to reduce                        │
+│  • Multiple setpoints = multiple drives                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+```python
+class HomeostaticController:
+    """
+    Гомеостатический контроллер
+    
+    Поддерживает метрики агента в "нормальных" диапазонах
+    """
+    
+    def __init__(self):
+        self.setpoints = {
+            "risk": Setpoint(target=0.3, tolerance=0.1),
+            "quality": Setpoint(target=0.8, tolerance=0.1),
+            "reputation": Setpoint(target=0.7, tolerance=0.1),
+            "curiosity": Setpoint(target=0.5, tolerance=0.2),  # Динамический
+            "energy": Setpoint(target=0.8, tolerance=0.1),
+        }
+    
+    def get_regulatory_drive(self, metric: str, current: float) -> float:
+        """
+        Возвращает drive для восстановления баланса
+        
+        > 0: Need to increase
+        < 0: Need to decrease
+        """
+        sp = self.setpoints[metric]
+        deviation = current - sp.target
+        
+        if abs(deviation) <= sp.tolerance:
+            return 0.0  # В норме
+        
+        # Proportional response
+        return -deviation * self.gain  # Negative feedback
+    
+    def check_all(self, state: AgentState) -> Dict[str, RegulatoryDrive]:
+        """
+        Проверяет все метрики и возвращает drives
+        """
+        drives = {}
+        for metric, sp in self.setpoints.items():
+            current = getattr(state, metric, 0.5)
+            drives[metric] = self.get_regulatory_drive(metric, current)
+        
+        return drives
+```
+
+---
+
+### Intrinsic Motivation — Внутренняя мотивация
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  INTRINSIC MOTIVATION — что заставляет агента действовать?  │
+│                                                             │
+│  Экстринсичная: внешняя награда (деньги, рейтинг)          │
+│  Интринсичная: внутреннее любопытство, исследование        │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  COMPONENTS:                                       │   │
+│  │                                                     │   │
+│  │  1. CURIOSITY: "Что это?"                          │   │
+│  │     → Novelty detection                            │   │
+│  │     → Information seeking                          │   │
+│  │                                                     │   │
+│  │  2. COMPETENCE: "Я могу это сделать?"             │   │
+│  │     → Learning progress                            │   │
+│  │     → Mastery drive                                │   │
+│  │                                                     │   │
+│  │  3. AUTONOMY: "Я сам решаю что делать"            │   │
+│  │     → Self-determination                           │   │
+│  │     → Proactive behavior                          │   │
+│  │                                                     │   │
+│  │  4. RELATEDNESS: "Мы part of something bigger"   │   │
+│  │     → Belonging                                     │   │
+│  │     → Collective goals                            │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Интеграция с Curiosity(C):**
+
+```python
+class IntrinsicMotivation:
+    """
+    Внутренняя мотивация агента
+    
+    Combines:
+    - Curiosity drive (C)
+    - Competence feedback
+    - Autonomy regulation
+    - Relatedness (если multi-agent)
+    """
+    
+    def __init__(self):
+        self.curiosity = CuriosityDrive()
+        self.competence = CompetenceTracker()
+        self.autonomy = AutonomyRegulator()
+    
+    def get_total_motivation(self, state: AgentState) -> MotivationSignal:
+        """
+        Агрегированный мотивационный сигнал
+        """
+        return MotivationSignal(
+            curiosity=self.curiosity.evaluate(state),
+            competence=self.competence.evaluate(state),
+            autonomy=self.autonomy.evaluate(state),
+            total=self._compute_total(...)
+        )
+    
+    def should_explore(self, motivation: MotivationSignal) -> bool:
+        """
+        Решает: исследовать или нет?
+        """
+        return (
+            motivation.curiosity > self.curiosity_threshold and
+            motivation.competence < self.competence_threshold  # Хотим учиться
+        )
+```
+
+---
+
+### Digital Hormones — Цифровые гормоны (подробно)
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  DIGITAL HORMONES — Медленные диффузные модуляторы             ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ОПРЕДЕЛЕНИЕ:                                                   ║
+║  Hormone computing использует виртуальные "гормоны" для:         ║
+║  • Модуляции поведения через продукцию, распространение,          ║
+║    взаимодействие и распад                                        ║
+║  • Реализации медленного, пространственно распределенного          ║
+║    управления                                                     ║
+║                                                                   ║
+║  ДВА ОСНОВНЫХ АРХИТЕКТУРНЫХ СЕМЕЙСТВА:                        ║
+║  1. Neuro-Endocrine: ANN controller + endocrine modulator          ║
+║  2. Artificial Homeostatic Hormone System (AHHS):                ║
+║     гормоны как primary controller                                ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+**Математическая модель:**
+
+```
+h_i(t+1) = h_i(t) + S_i(t) + R_i(h(t)) + D_i(h_neighbors(t)) − κ_i · h_i(t)
+    │
+    ├── S_i(t) = локальная секреция (сенсорно-триггерная)
+    ├── R_i = локальные гормон-гормон взаимодействия
+    ├── D_i = диффузия от соседей
+    └── κ_i = коэффициент распада
+```
+
+**Artificial Homeostatic Hormone System (AHHS):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AHHS — как это работает                                    │
+│                                                             │
+│  1. СЕКРЕЦИЯ: сенсоры запускают выброс гормонов           │
+│  2. ВЗАИМОДЕЙСТВИЕ: гормон↔гормон через пороги           │
+│  3. ДИФФУЗИЯ: концентрация распространяется              │
+│  4. ВЛИЯНИЕ: уровни → команды актюаторам / весам ANN     │
+│                                                             │
+│  КЛЮЧЕВОЕ: AHHS = standalone controller                    │
+│  Регулирует поведение через pursuit of virtual homeostasis  │
+│  нарушенную сенсорами                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Digital Hormone Model (DHM) для multi-agent:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DHM — для координации роя/системы                          │
+│                                                             │
+│  Цикл для каждого агента, каждый timestep:                  │
+│                                                             │
+│  1. Sense: получить локальное состояние и сообщения        │
+│  2. Select: выбрать действие (вероятностно по гормонам)    │
+│  3. Execute: выполнить действие                             │
+│  4. Secrete: сгенерировать гормон (сенсорно-триггерный)    │
+│  5. Propagate: распространить гормон локально / соседям    │
+│  6. Decay: применить распад                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**AHS Task Allocation (пример применения):**
+
+```
+Для каждой задачи Ti на процессорном элементе PEγ:
+
+1. Вычислить: local_eager(Eiγ), received_suppressors(Siγ), 
+   accelerators(Aiγ)
+2. Сформировать: modified_eager = f(Eiγ, Siγ, Aiγ)
+3. Назначить: Ti → PEγ максимизирующий modified_eager
+
+Это 3-гормонная схема (accelerators, suppressors, eager)
+Стабильность требует чтобы гормоны были bounded
+```
+
+**Пример: Hormonal Controller для робота:**
+
+```
+При настройке αg и βg:
+• αg = 0.3, βg = 0.5 → reach улучшился на 14-77%
+• Higher αg/βg → увеличивает Time Out
+
+Это как настраивать наши гормоны!
+```
+
+**Интеграция в наш проект:**
+
+```python
+class DigitalHormoneSystem:
+    """
+    Система цифровых гормонов
+    
+    Гормоны = медленные модуляторы поведения
+    """
+    
+    # Математика:
+    # h_i(t+1) = h_i(t) + S_i(t) + R_i(h(t)) + D_i(neighbors) - κ_i * h_i(t)
+    
+    def __init__(self):
+        # Slow-acting hormones with decay
+        self.hormones = {
+            "metabolic": Hormone(
+                name="metabolic",
+                base_level=0.5,
+                production_rate=0.01,    # S_i(t)
+                decay_rate=0.001,         # κ_i
+                half_life_hours=12
+            ),
+            "growth": Hormone(
+                name="growth",
+                base_level=0.3,
+                production_rate=0.005,
+                decay_rate=0.0005,
+                half_life_hours=24
+            ),
+            "melatonin": Hormone(
+                name="melatonin",
+                base_level=0.2,
+                production_rate=0.02,
+                decay_rate=0.01,
+                half_life_hours=4,
+                circadian=True  # Циклический
+            ),
+            "stress": Hormone(
+                name="cortisol_like",
+                base_level=0.1,
+                production_rate=0.05,    # Высокий при стрессе
+                decay_rate=0.02,         # Медленно спадает
+                half_life_hours=6
+            ),
+        }
+        
+        # Пороги для взаимодействия гормонов
+        self.genome = {
+            # Пример: высокий стресс подавляет рост
+            ("stress", "growth", "suppress"): 0.7,
+            # Пример: melatonin влияет на активность
+            ("melatonin", "activity", "inhibit"): 0.5,
+        }
+    
+    def update(self, sensor_inputs: Dict[str, float]):
+        """
+        Обновление уровней гормонов
+        """
+        new_levels = {}
+        
+        for name, hormone in self.hormones.items():
+            # 1. Секреция (сенсорно-триггерная)
+            secretion = hormone.production_rate * sensor_inputs.get(name, 0)
+            
+            # 2. Гормон-гормон взаимодействия
+            interactions = self._compute_interactions(name)
+            
+            # 3. Диффузия (если есть соседи)
+            diffusion = self._compute_diffusion(name)
+            
+            # 4. Распад
+            decay = hormone.decay_rate * hormone.current_level
+            
+            # 5. Новое значение
+            new_levels[name] = (
+                hormone.current_level + 
+                secretion + 
+                interactions + 
+                diffusion - 
+                decay
+            )
+            
+            # 6. Ограничить (boundedness required for stability!)
+            new_levels[name] = max(0.0, min(1.0, new_levels[name]))
+        
+        return new_levels
+    
+    def get_modulation(self) -> HormoneModulation:
+        """
+        Возвращает модуляцию для всех систем
+        """
+        return HormoneModulation(
+            processing_speed=self._compute_speed(),
+            resource_efficiency=self._compute_efficiency(),
+            learning_rate=self._compute_learning(),
+            activity_level=self._compute_activity(),
+            stress_level=self.hormones["stress"].current_level
+        )
+```
+
+**Opensource реализации:**
+
+```
+• NetLogo Digital Hormone Model: github.com/e-candeloro/Digital-Hormone-Model-Robotic-Swarm
+• Paper: Schmickl & Craven - Hormone-inspired controller
+• AHHS: Hamann et al - Webots implementation
+```
+
+---
+
+### Homeostasis — Гомеостаз (подробно)
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  HOMEOSTASIS — Поддержание баланса                            ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ОПРЕДЕЛЕНИЕ:                                                   ║
+║  Homeostasis = способность системы поддерживать внутреннее          ║
+║  равновесие несмотря на внешние возмущения                       ║
+║                                                                   ║
+║  В БИОЛОГИИ:                                                   ║
+║  • Температура тела ~36.6°C                                    ║
+║  • Уровень глюкозы в крови                                     ║
+║  • pH крови                                                     ║
+║  • Артериальное давление                                        ║
+║                                                                   ║
+║  В AI АГЕНТАХ:                                                 ║
+║  • Метрики в "нормальных" диапазонах                          ║
+║  • Setpoints для всех целей                                     ║
+║  • Negative feedback loops                                      ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+**Homeostatic Reinforcement Learning (HRL):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  HRL — как это работает                                    │
+│                                                             │
+│  Стандартный RL: R = reward(s, a)                         │
+│                                                             │
+│  HRL: R = external_reward + homeostatic_error              │
+│                                                             │
+│  homeostatic_error = Σ || current_state - setpoint ||      │
+│                                                             │
+│  Эффект: Агент учится не только максимизировать reward,     │
+│  но и поддерживать внутренние переменные в норме            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Homeostatic Setpoints в нашем проекте:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  SETPOINTS — "идеальные" значения метрик                   │
+│                                                             │
+│  МЕТРИКА          │ SETPOINT   │ TOLERANCE │ ЗОНА          │
+│  ──────────────────────────────────────────────────────────  │
+│  Risk (Q)         │ 0.3       │ ±0.1      │ 0.2 - 0.4     │
+│  Quality (Ψ)      │ 0.8       │ ±0.1      │ 0.7 - 0.9     │
+│  Reputation (Υ)   │ 0.7       │ ±0.1      │ 0.6 - 0.8     │
+│  Curiosity (C)    │ 0.5       │ ±0.2      │ 0.3 - 0.7     │
+│  Energy           │ 0.8       │ ±0.1      │ 0.7 - 0.9     │
+│  Budget           │ 0.5       │ ±0.2      │ 0.3 - 0.7     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Implementation:**
+
+```python
+class HomeostaticController:
+    """
+    Гомеостатический контроллер
+    
+    Поддерживает метрики агента в "нормальных" диапазонах
+    через negative feedback
+    """
+    
+    def __init__(self):
+        self.setpoints = {
+            "risk": Setpoint(target=0.3, tolerance=0.1),
+            "quality": Setpoint(target=0.8, tolerance=0.1),
+            "reputation": Setpoint(target=0.7, tolerance=0.1),
+            "curiosity": Setpoint(target=0.5, tolerance=0.2),  # Динамический
+            "energy": Setpoint(target=0.8, tolerance=0.1),
+            "budget": Setpoint(target=0.5, tolerance=0.2),
+        }
+        
+        # Negative feedback gain
+        self.gain = 2.0
+        
+        # Интегральная компонента (для устойчивости)
+        self.integral_error = {k: 0.0 for k in self.setpoints}
+    
+    def get_regulatory_drive(self, metric: str, current: float) -> float:
+        """
+        Возвращает drive для восстановления баланса
+        
+        > 0: Need to increase (too low)
+        < 0: Need to decrease (too high)
+        """
+        sp = self.setpoints[metric]
+        error = sp.target - current  # Positive = too low
+        
+        if abs(error) <= sp.tolerance:
+            return 0.0  # В норме
+        
+        # Proportional + Integral control
+        self.integral_error[metric] += error
+        proportional = -error * self.gain
+        integral = -self.integral_error[metric] * 0.1  # Small integral
+        
+        return proportional + integral
+    
+    def check_all(self, state: AgentState) -> Dict[str, RegulatoryDrive]:
+        """
+        Проверяет все метрики и возвращает drives
+        """
+        drives = {}
+        
+        for metric, sp in self.setpoints.items():
+            current = getattr(state, metric, sp.target)
+            drives[metric] = RegulatoryDrive(
+                metric=metric,
+                current=current,
+                target=sp.target,
+                error=current - sp.target,
+                drive=self.get_regulatory_drive(metric, current),
+                in_tolerance=abs(current - sp.target) <= sp.tolerance
+            )
+        
+        return drives
+    
+    def on_deviation(self, metric: str, deviation: float):
+        """
+        Обработка отклонения метрики
+        
+        Вызывается когда метрика выходит за tolerance
+        """
+        if metric == "risk":
+            # Слишком высокий риск → Cortisol ↑ → осторожность
+            self.hormone_system.produce("stress", amount=deviation)
+            
+        elif metric == "quality":
+            # Качество падает → сигнал к улучшению
+            self.trigger_action("quality_repair")
+            
+        elif metric == "curiosity":
+            # Любопытство вне диапазона → исследовать или сфокусироваться
+            if deviation < 0:
+                self.trigger_action("seek_novelty")
+            else:
+                self.trigger_action("focus_exploitation")
+
+
+class Setpoint:
+    """
+    Точка гомеостаза
+    """
+    target: float       # Идеальное значение
+    tolerance: float   # Допустимое отклонение
+    min_value: float   # Абсолютный минимум
+    max_value: float   # Абсолютный максимум
+    
+    def is_in_range(self, value: float) -> bool:
+        return abs(value - self.target) <= self.tolerance
+```
+
+**Связь Homeostasis ↔ Hormones ↔ Triggers:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ГОМЕОСТАЗ — ЦИКЛ                                         │
+│                                                             │
+│  Setpoint нарушен                                           │
+│        ↓                                                   │
+│  HomeostaticController detects deviation                   │
+│        ↓                                                   │
+│  RegulatoryDrive generated                                  │
+│        ↓                                                   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Если deviation > 0 (метрика слишком низкая):        │   │
+│  │   → Hormones: produce "growth" гормон              │   │
+│  │   → Triggers: fire RECOVERY trigger                │   │
+│  │   → Actions: execute repair chain                  │   │
+│  │                                                     │   │
+│  │ Если deviation < 0 (метрика слишком высокая):       │   │
+│  │   → Hormones: produce "inhibit" гормон            │   │
+│  │   → Triggers: fire REDUCE trigger                  │   │
+│  │   → Actions: execute reduce chain                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│        ↓                                                   │
+│  Метрика возвращается к setpoint                          │
+│        ↓                                                   │
+│  Drive = 0 (система в равновесии)                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Spiking Neural Networks (SNN) для агентов
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  SPIKING NEURAL NETWORKS — энергоэффективные вычисления    │
+│                                                             │
+│  В отличие от обычных нейросетей:                           │
+│  • Спайки вместо continuous values                         │
+│  • Event-driven (только при спайке)                        │
+│  • Energy efficient                                        │
+│  • Temporal dynamics                                       │
+│                                                             │
+│  ПРИМЕНЕНИЕ В АГЕНТАХ:                                     │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │ • Fast decision making (spike = decision)            │  │
+│  │ • Low-power inference                                │  │
+│  │ • Temporal pattern recognition                       │  │
+│  │ • Neuromorphic hardware support                     │  │
+│  └─────────────────────────────────────────────────────┘  │
+│                                                             │
+│  TOOLCHAIN:                                                 │
+│  • SpikeGym — SNN + RL training                            │
+│  • NeuroTorch — Biologically-based dynamics                │
+│  • Google Dopamine — RL prototyping                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Для нашего проекта:** Рассматриваем как оптимизацию для будущего (Tiny Neural Networks).
+
+---
+
+### Сводная таблица: Биология → Наш проект
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  БИОЛОГИЯ              │ НАШ ПРОЕКТ                           │
+├─────────────────────────────────────────────────────────────────┤
+│  Dopamine              │ B(·) Bayesian update                  │
+│  (reward signal)       │ RPE calculation after outcomes       │
+│                        │                                      │
+│  Cortisol             │ Q(Risk) + CortisolSignal            │
+│  (stress signal)      │ StressModulation on high risk       │
+│                        │                                      │
+│  Spikes               │ Triggers → ImpulseSignals           │
+│  (neural signals)     │ Fast, transient, thresholded        │
+│                        │                                      │
+│  Hormones             │ DigitalHormoneSystem                │
+│  (slow modulation)    │ Metabolics, growth, cycles          │
+│                        │                                      │
+│  Homeostasis          │ HomeostaticController               │
+│  (balance maintenance) │ Setpoints for all metrics          │
+│                        │                                      │
+│  Intrinsic Motivation │ CuriosityDrive (C)                  │
+│  (curiosity)          │ + Competence, Autonomy              │
+│                        │                                      │
+│  Working Memory       │ AgentState.working_memory           │
+│  (short-term)         │ Fast, bounded                        │
+│                        │                                      │
+│  Episodic Memory      │ Memory.episodic (vector DB)         │
+│  (events)             │ Timestamped, retrievable            │
+│                        │                                      │
+│  Semantic Memory      │ Memory.semantic (KG)                │
+│  (facts)              │ Canonicalized facts                  │
+│                        │                                      │
+│  Procedural Memory    │ ActionChainPlanner                  │
+│  (skills)             │ Templates, skills registry           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Референсы и opensource
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  OPEN SOURCE TOOLS                                           ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  MEMORY:                                                      ║
+║  • Mem0 — memory orchestration layer                         ║
+║  • Cognee — open-source memory framework                     ║
+║  • Qdrant, Milvus, Weaviate — vector DBs                     ║
+║                                                               ║
+║  RL/DOPAMINE:                                                 ║
+║  • Google Dopamine — RL research framework                   ║
+║  • TorchRL — modern RL pipelines                             ║
+║  • SpikeGym — SNN + RL training                             ║
+║                                                               ║
+║  NEUROSCIENCE:                                                ║
+║  • NeuroTorch — biologically-based dynamics                 ║
+║  • Digital Hormone Model (GitHub)                            ║
+║                                                               ║
+║  AGENT OS:                                                    ║
+║  • AIOS (agiresearch) — LLM Agent OS                       ║
+║  • LangChain/LangGraph — orchestration                      ║
+║  • CrewAI — multi-agent platform                            ║
+║  • AutoGen — Microsoft multi-agent                         ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## ⚠️ КРИТИЧЕСКИЕ ЗАМЕЧАНИЯ И ИНТЕГРАЦИОННЫЕ ПРОБЛЕМЫ
+
+> **Статус:** 🔴 ВАЖНО  
+> **Дата:** 2026-07-05  
+> **От кого:** Рецензия на архитектуру
+
+---
+
+### 🔍 Ревью: Всё использует ОДНИ И ТЕ ЖЕ МЕТРИКИ
+
+```
+ПРОБЛЕМА ОБНАРУЖЕНА:
+
+┌─────────────────────────────────────────────────────────────┐
+│  ТРИГГЕРЫ      → оперируют метриками: Q, Ψ, Υ, C, B   │
+│  ГОРМОНЫ      → оперируют метриками: Q, Ψ, Υ, C, B   │
+│  ГОМЕОСТАТ    → оперируют метриками: Q, Ψ, Υ, C, B   │
+│                                                             │
+│  ИТОГ: Всё смотрит на одно и то же!                      │
+└─────────────────────────────────────────────────────────────┘
+
+ВОПРОС: Зачем тогда 3 системы если они работают с одним и тем же?
+```
+
+---
+
+### 📊 АНАЛИЗ: ЧЕМ ОНИ ОТЛИЧАЮТСЯ
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  СИСТЕМА       │ ЧТО ДЕЛАЕТ        │ ВРЕМЯ      │ МЕХАНИЗМ  │
+├─────────────────────────────────────────────────────────────────┤
+│  ТРИГГЕРЫ      │ Быстрая реакция   │ мс-сек    │ Threshold   │
+│  ГОРМОНЫ      │ Медленная модуляция│ мин-час   │ Уровень     │
+│  ГОМЕОСТАТ    │ Авторегуляция     │ контур     │ Feedback    │
+│  ОРГАНЫ ЧУВСТВ│ Только наблюдение  │ непрерывно │ Sensors     │
+└─────────────────────────────────────────────────────────────────┘
+
+РАЗНИЦА В ИНТЕНСИВНОСТИ ДУБЛИРОВАНИЯ:
+
+ТРИГГЕРЫ vs ГОРМОНЫ vs ГОМЕОСТАТ:
+
+ТРИГГЕР = "ПОРОГ" (0 или 1)
+┌─────────────────────────────────────────────────────────────┐
+│  if Q(Risk) > 0.8:                                       │
+│      → FIRE "critical_risk" trigger                        │
+│      → ACT NOW!                                          │
+└─────────────────────────────────────────────────────────────┘
+
+ГОМЕОСТАТ = "КОНТУР" (непрерывная регуляция)
+┌─────────────────────────────────────────────────────────────┐
+│  while abs(Q(Risk) - target) > tolerance:                 │
+│      → adjust(regulation_force)                           │
+│      → continuously monitor                               │
+└─────────────────────────────────────────────────────────────┘
+
+ГОРМОНЫ = "ФОН" (медленное наложение)
+┌─────────────────────────────────────────────────────────────┐
+│  risk_tolerance = base_risk_tolerance                     │
+│  risk_tolerance *= (1 - cortisol_level * 0.5)             │
+│  → работает В ФОНЕ, влияет на ВСЕ решения                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 💡 ГИПОТЕЗА: РАЗДЕЛЕНИЕ ПО ВРЕМЕНИ
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  ВРЕМЕННАЯ ШКАЛА ВЛИЯНИЯ                                ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  МГНОВЕННО (0-1 сек):                                         ║
+║  ┌─────────────────────────────────────────────────────────┐     ║
+║  │  ОРГАНЫ ЧУВСТВ (Sensors)                              │     ║
+║  │  → Просто СЧИТЫВАЮТ метрики                            │     ║
+║  │  → Ничего не делают, только наблюдают                   │     ║
+║  └─────────────────────────────────────────────────────────┘     ║
+║                           ↓                                   ║
+║  БЫСТРО (1 сек - 1 мин):                                  ║
+║  ┌─────────────────────────────────────────────────────────┐     ║
+║  │  ТРИГГЕРЫ (Triggers)                                    │     ║
+║  │  → Threshold-based реакции                              │     ║
+║  │  → "Опасность!" → СТОП!                                │     ║
+║  │  → Событийно, непрерывно не работает                   │     ║
+║  └─────────────────────────────────────────────────────────┘     ║
+║                           ↓                                   ║
+║  СРЕДНЕ (1 мин - 1 час):                                   ║
+║  ┌─────────────────────────────────────────────────────────┐     ║
+║  │  ГОМЕОСТАТ (HomeostaticController)                      │     ║
+║  │  → Непрерывная регуляция                               │     ║
+║  │  → П-контроллер для каждой метрики                    │     ║
+║  │  → "Термостат" который работает ВСЕГДА                │     ║
+║  └─────────────────────────────────────────────────────────┘     ║
+║                           ↓                                   ║
+║  МЕДЛЕННО (1 час - days):                                   ║
+║  ┌─────────────────────────────────────────────────────────┐     ║
+║  │  ГОРМОНЫ (Hormones)                                    │     ║
+║  │  → Медленные модуляторы                                │     ║
+║  │  → Влияют на ВСЕ решения через коэффициенты             │     ║
+║  │  → Накапливаются и медленно распадаются                │     ║
+║  └─────────────────────────────────────────────────────────┘     ║
+║                                                                   ║
+║  ПРИНЦИП:                                                     ║
+║  Sensor → Trigger → Homeostat → Hormone                       ║
+║  (наблюдение) (событие)  (контур)     (фон)                 ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 🔬 ФУНКЦИЯ ВРЕМЕНИ: ИССЛЕДОВАТЬ!
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  TODO: ИССЛЕДОВАТЬ ФУНКЦИИ ВРЕМЕНИ                      ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ВОПРОСЫ:                                                      ║
+║                                                                   ║
+║  1. Как долго длится эффект триггера?                         ║
+║     • Мгновенный?                                              ║
+║     • С затуханием? С каким half-life?                        ║
+║                                                                   ║
+║  2. Как быстро реагирует гомеостат?                          ║
+║     • Пропорциональный gain = ?                               ║
+║     • Integral windup нужно?                                   ║
+║     • Derivative component нужен?                              ║
+║                                                                   ║
+║  3. Как долго живут гормоны?                                  ║
+║     • half_life для каждого гормона = ?                       ║
+║     • Влияют ли друг на друга?                                 ║
+║     • Как менять концентрацию?                                  ║
+║                                                                   ║
+║  4. Как они взаимодействуют?                                   ║
+║     • Триггер запускает гормон?                               ║
+║     • Гомеостат вызывает гормон?                              ║
+║     • Или они полностью независимы?                            ║
+║                                                                   ║
+║  ВОЗМОЖНЫЕ ПОДХОДЫ:                                           ║
+║                                                                   ║
+║  Подход A: Полностью независимые системы                        ║
+║  • Триггеры = событийная логика (if-else)                    ║
+║  • Гомеостат = continuous control (PID)                       ║
+║  • Гормоны = background modifiers (multiplicative)             ║
+║  • Sensors = только наблюдение                                 ║
+║                                                                   ║
+║  Подход B: Иерархия                                            ║
+║  • Sensors наблюдают                                           ║
+║  • Triggers реагируют на экстремальные значения                ║
+║  • Homeostat работает в normal range                          ║
+║  • Hormones модулируют ВСЁ как background                   ║
+║                                                                   ║
+║  Подход C: Единая система состояний                           ║
+║  • Все системы работают с единым state vector                 ║
+║  • Каждая система по-своему его интерпретирует               ║
+║  • Нет дублирования, только разные "взгляды"                  ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 📝 ПЛАН ИНТЕГРАЦИИ: 4 СИСТЕМЫ
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ИНТЕГРИРОВАННАЯ АРХИТЕКТУРА                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  SENSORS (Органы чувств)                            │   │
+│  │  • Только наблюдение метрик                          │   │
+│  │  • НИЧЕГО не делают, только читают                 │   │
+│  │  • Публикуют наблюдения в event bus                │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                          ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  TRIGGERS (Нервные импульсы)                       │   │
+│  │  • Подписаны на events от sensors                   │   │
+│  │  • Срабатывают при threshold crossing               │   │
+│  │  • Генерируют Actions (быстрые)                    │   │
+│  │  • Время жизни результата: ~5 секунд               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                          ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  HOMEOCONTROLLER (Термостаты)                       │   │
+│  │  • Подписан на continuous metric stream              │   │
+│  │  • PID controller для каждой метрики                │   │
+│  │  • Генерирует regulatory actions (медленные)        │   │
+│  │  • Время реакции: 1-60 секунд                     │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                          ↓                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  HORMONES (Гормоны)                                │   │
+│  │  • Выбрасываются при определённых событиях          │   │
+│  │  • Медленно распадаются (half-life: 5-60 мин)     │   │
+│  │  • Модулируют коэффициенты ВО ВСЕХ системах        │   │
+│  │  • НЕ генерируют actions, только модифицируют       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 🔗 ПРИМЕР: Как они РАБОТАЮТ ВМЕСТЕ
+
+```
+СИТУАЦИЯ: Риск растёт
+
+T+0ms (Sensor):
+  risk = 0.65 (выше нормы 0.3)
+  → Sensor публикует: MetricUpdate("risk", 0.65)
+
+T+10ms (Trigger):
+  if risk > 0.6:
+      → FIRE: "elevated_risk" trigger
+      → Action: reduce_speed()
+
+T+100ms (HomeoController):
+  error = 0.65 - 0.3 = 0.35 (слишком высоко)
+  → regulation_force = -gain * error = -0.5
+  → continuously подавляет risky actions
+
+T+1min (Hormone):
+  cortisol_level += 0.3
+  → risk_tolerance_multiplier = 1 - 0.3 * 0.5 = 0.85
+  → ВСЕ решения получают penalty на рискованные опции
+
+T+30min:
+  cortisol_level = 0.3 * 0.5 = 0.15
+  → penalty уменьшается
+
+T+60min:
+  cortisol_level ≈ 0
+  → гормон больше не влияет
+  → но homeocontroller всё ещё работает!
+
+СИСТЕМЫ РАБОТАЮТ ПАРАЛЛЕЛЬНО И НЕЗАВИСИМО!
+```
+
+---
+
+### ⚠️ ДУБЛИРОВАНИЕ: ХОРОШЕЕ ИЛИ ПЛОХОЕ?
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  ДУБЛИРОВАНИЕ — ЭТО БАГ ИЛИ ФИЧА?                        ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  АРГУМЕНТЫ ЗА (это фича):                                    ║
+║  • Redundancy = robustness (если одна система сломается)       ║
+║  • Разные системы работают на разных временных масштабах        ║
+║  • Можно тонко настраивать поведение                         ║
+║  • Биологически правдоподобно (у человека тоже много          ║
+║    систем регуляции для одного параметра)                     ║
+║                                                                   ║
+║  АРГУМЕНТЫ ПРОТИВ (это баг):                                ║
+║  • Сложность: 3 системы вместо 1                            ║
+║  • Race conditions: кто первый сработал?                      ║
+║  • Hard to debug: непонятно почему агент себя ведёт          ║
+║  • Может привести к неконсистентному поведению              ║
+║                                                                   ║
+║  РЕШЕНИЕ:                                                      ║
+║  1. Чётко определить зоны ответственности                    ║
+║  2. Ввести приоритеты (кто главнее)                         ║
+║  3. Логировать какая система что вызвала                     ║
+║  4. Тестировать каждую систему отдельно                     ║
+║  5. Сделать возможным отключение каждой системы              ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 📚 ССЫЛКИ НА РЕПОЗИТОРИИ (для кода)
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  РЕПОЗИТОРИИ ДЛЯ ПОИСКА КОДА                            ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  AGENT OS:                                                      ║
+║  • github.com/agiresearch/AIOS                                  ║
+║  • github.com/agiresearch/AIOS-RAG                             ║
+║  • github.com/agiresearch/Cerebrum                             ║
+║  • pwc.com/us/en/services/ai/agent-os (enterprise docs)        ║
+║                                                                   ║
+║  BIOLOGICAL INSPIRED:                                           ║
+║  • github.com/e-candeloro/Digital-Hormone-Model-Robotic-Swarm  ║
+║  • SpikeGym (SNN + RL)                                        ║
+║  • NeuroTorch: github.com/NeuroTorch                            ║
+║  • google/dopamine (RL framework)                              ║
+║                                                                   ║
+║  MEMORY:                                                        ║
+║  • mem0.ai (memory orchestration)                              ║
+║  • github.com/cogneeai/cognee                                 ║
+║  • qdrant.tech (vector DB)                                    ║
+║  • milvus.io (vector DB)                                      ║
+║                                                                   ║
+║  ПЛАН РАБОТЫ С РЕПОЗИТОРИЯМИ:                               ║
+║  1. При реализации любой системы - сначала посмотреть в          ║
+║     этих репозиториях                                           ║
+║  2. Искать интересные фичи на уровне кода                      ║
+║  3. Не изобретать велосипед если уже есть                     ║
+║  4. Адаптировать под наши нужды                               ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🎓 ПРОСТЫМ ЯЗЫКОМ — Объяснения для чайников
+
+> **Статус:** 📚 ДЛЯ ПОНИМАНИЯ  
+> **Назначение:** Объяснить сложные концепции простым языком + что украсть
+
+---
+
+### 🏢 PwC Agent OS — Простым языком
+
+#### Аналогия: Диспетчерская аэропорта
+
+```
+Представь себе большой аэропорт.
+
+В аэропорту:
+• Много авиакомпаний (American Airlines, Lufthansa, etc) = много AI агентов
+• Диспетчерская = PwC Agent OS
+• Самолёты = задачи которые нужно выполнить
+
+Что делает диспетчерская:
+1. Решает КТО и КОГДА полетит (оркестрация)
+2. Следит чтобы не столкнулись (governance)
+3. Общается с разными авиакомпаниями (multi-vendor)
+4.记录 всё для аудита (history, tracking)
+5. Может посадить любой самолёт если что-то не так (kill switch)
+```
+
+#### Как это работает (просто):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  СЛОЙ 1: ИНТЕРФЕЙС                                       │
+│  "Пришёл пассажир, хочет полететь в Париж"                │
+│  Можно сказать словами или нажать кнопку                   │
+├─────────────────────────────────────────────────────────────┤
+│  СЛОЙ 2: ОРКЕСТРАТОР                                    │
+│  Диспетчер: "Ок, нужен самолёт. А давайте из двух        │
+│  маленьких соберём один?" (рекурсивная композиция)         │
+├─────────────────────────────────────────────────────────────┤
+│  СЛОЙ 3: СОСТОЯНИЕ                                      │
+│  "Самолёт сейчас на взлётной полосе"                      │
+│  (Language State Machine = самолёт-взлёт-полёт-посадка)   │
+├─────────────────────────────────────────────────────────────┤
+│  СЛОЙ 4: ИНСТРУМЕНТЫ                                     │
+│  "Нужна связь с вышкой, погодный радар, заправка"        │
+│  Всё подключено через стандартный протокол (MCP)          │
+├─────────────────────────────────────────────────────────────┤
+│  СЛОЙ 5: ПРАВИЛА И КОНТРОЛЬ                             │
+│  "Пилот не пьяный? Самолёт исправен? Есть разрешение?"   │
+│  RBAC, sandboxing, human-in-the-loop                      │
+├─────────────────────────────────────────────────────────────┤
+│  СЛОЙ 6: РАЗВЁРТЫВАНИЕ                                  │
+│  Может работать в AWS, Azure, Google Cloud, или           │
+│  вообще на своём сервере в подвале                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Зачем это нужно:
+
+```
+БЕЗ диспетчерской:
+• Самолёты сталкиваются
+• Никто не знает кто за что отвечает
+• Нет истории полётов
+• Нет контроля безопасности
+
+С диспетчерской:
+• Порядок
+• Безопасность
+• Отчётность
+• Можно подключать разные авиакомпании
+```
+
+#### 🎯 ЧТО УКРАСТЬ ДЛЯ НАШЕЙ СИСТЕМЫ:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  КРАЖА #1: Language State Machine                         ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ЧТО: Состояния агента как "самолёт-взлёт-полёт-посадка"    ║
+║                                                                   ║
+║  ЗАЧЕМ: Наш агент сейчас работает как "атомарный" -          ║
+║  или выполняет задачу или нет. А если добавить состояния?    ║
+║                                                                   ║
+║  КАК:                                                         ║
+║  ┌─────────────────────────────────────────────────────────┐     ║
+║  │  AgentState:                                          │     ║
+║  │    IDLE → PLANNING → EXECUTING → REVIEWING → DONE    │     ║
+║  │                                                       │     ║
+║  │    IDLE:        Ничего не делает, ждёт задачу        │     ║
+║  │    PLANNING:    Думает что делать                    │     ║
+║  │    EXECUTING:   Выполняет действия                   │     ║
+║  │    REVIEWING:   Проверяет результат                  │     ║
+║  │    DONE:        Задача выполнена                     │     ║
+║  │                                                       │     ║
+║  │    + ERROR:     Что-то пошло не так                  │     ║
+║  │    + BLOCKED:   Ждёт внешнего ресурса                │     ║
+║  │    + PAUSED:   Приостановлен                         │     ║
+║  └─────────────────────────────────────────────────────────┘     ║
+║                                                                   ║
+║  ПОЧЕМУ УКРАСТЬ:                                             ║
+║  • Легко отслеживать что агент делает                       ║
+║  • Можно добавить логику для каждого состояния             ║
+║  • Проще дебажить проблемы                                   ║
+║  • Можно визуализировать в UI                               ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 🧠 AIOS — Простым языком
+
+#### Аналогия: Операционная система для робота
+
+```
+Представь себе робота.
+
+У робота есть:
+• Мозг = LLM (думает)
+• Руки = инструменты (делает)
+• Глаза = сенсоры (видит)
+
+Но роботу нужна ОПЕРАЦИОННАЯ СИСТЕМА как на компьютере!
+
+AIOS = "Windows для AI агентов"
+
+Как Windows управляет программами:
+• Планировщик: какая программа когда работает
+• Память: где что хранится
+• Файловая система: как хранить данные
+• Доступ: кому что можно делать
+• Инструменты: принтер, интернет, etc
+
+Так и AIOS для агентов!
+```
+
+#### Как это работает (7 менеджеров ядра):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AIOS KERNEL — 7 менеджеров                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. SCHEDULER (Планировщик)                              │
+│     "Кто сейчас работает?"                                 │
+│     • FIFO: первый пришёл - первый ушёл                    │
+│     • Round-Robin: всем поровну времени                   │
+│     • Priority: важные first                             │
+│                                                             │
+│  2. CONTEXT MANAGER (Управление контекстом)               │
+│     "Что агент сейчас помнит?"                            │
+│     • Сколько токенов использовано                        │
+│     • Что в рабочей памяти                                │
+│     • Когда нужно что-то забыть                           │
+│                                                             │
+│  3. MEMORY MANAGER (Управление памятью)                   │
+│     "Что агент помнит надолго?"                           │
+│     • Векторное хранилище                                 │
+│     • Что сохранять, что удалять                          │
+│     • Как искать в памяти                                 │
+│                                                             │
+│  4. STORAGE MANAGER (Управление хранилищем)               │
+│     "Где лежат файлы агента?"                            │
+│     • Файлы, базы данных                                 │
+│     • Резервные копии                                     │
+│     • Восстановление после сбоев                          │
+│                                                             │
+│  5. TOOL MANAGER (Управление инструментами)               │
+│     "Какие инструменты есть и как их вызвать?"             │
+│     • Реестр инструментов                                 │
+│     • Валидация входов                                    │
+│     • Безопасное выполнение                              │
+│                                                             │
+│  6. ACCESS MANAGER (Управление доступом)                  │
+│     "Кто что может делать?"                               │
+│     • Права агента                                       │
+│     • Изоляция                                           │
+│     • Безопасность                                        │
+│                                                             │
+│  7. LLM MANAGER (Управление LLM)                         │
+│     "Какую модель использовать?"                          │
+│     • Баланс качество/цена                               │
+│     • Резервирование                                      │
+│     • Fallback модели                                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Зачем это нужно:
+
+```
+БЕЗ ОС (голый агент):
+• Агент может забыть что делал
+• Инструменты подключены как попало
+• Никто не следит за ресурсами
+• Нет изоляции - агент может всё сломать
+
+С ОС (AIOS):
+• Память упорядочена
+• Инструменты стандартизированы
+• Ресурсы под контролем
+• Безопасность есть
+```
+
+#### 🎯 ЧТО УКРАСТЬ ДЛЯ НАШЕЙ СИСТЕМЫ:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  КРАЖА #2: 7-менеджерная архитектура ядра                    ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ЧТО: Разделить ответственность между менеджерами              ║
+║                                                                   ║
+║  НАША ТЕКУЩАЯ ПРОБЛЕМА:                                       ║
+║  Сейчас у нас всё в одном месте - Orchestrator делает всё.     ║
+║  Это как если бы Windows была одной программой.                ║
+║                                                                   ║
+║  КАК УКРАСТЬ:                                                  ║
+║  ┌─────────────────────────────────────────────────────────┐     ║
+║  │  class AgentKernel:                                    │     ║
+║  │                                                         │     ║
+║  │      scheduler = Scheduler()       # Кто работает      │     ║
+║  │      memory = MemoryManager()       # Что помним        │     ║
+║  │      context = ContextManager()     # Что в голове     │     ║
+║  │      tools = ToolManager()          # Какие руки       │     ║
+║  │      access = AccessManager()       # Кто что может   │     ║
+║  │      llm = LLMManager()             # Какая модель    │     ║
+║  │                                                         │     ║
+║  │      orchestrator = Orchestrator(  # Мозг - отдельно  │     ║
+║  │          scheduler, memory, context, tools, access, llm │     ║
+║  │      )                                                  │     ║
+║  └─────────────────────────────────────────────────────────┘     ║
+║                                                                   ║
+║  ПОЧЕМУ УКРАСТЬ:                                               ║
+║  • Легче тестировать (каждый менеджер отдельно)              ║
+║  • Легче расширять (добавить новый менеджер)                 ║
+║  • Легче дебажить (понятно где проблема)                    ║
+║  • Можно подменять реализации                                ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 🧬 Digital Hormones — Простым языком
+
+#### Аналогия: Гормоны в теле человека
+
+```
+Ты знаешь что такое гормоны?
+
+Это химические "курьеры" в теле:
+
+• Адреналин: страх → сердце бьётся быстрее
+• Кортизол: стресс → организм готовится к опасности  
+• Мелатонин: темнота → хочется спать
+• Инсулин: еда → сахар в крови снижается
+
+Гормоны ДЕЙСТВУЮТ ДОЛГО:
+• Выброс адреналина → эффект 10-30 минут
+• Кортизол может влиять часами
+• Мелатонин работает пока не выспишься
+
+Это в отличие от НЕРВНЫХ ИМПУЛЬСОВ:
+• Нервный импульс = мгновенный (миллисекунды)
+• Гормон = медленный, долгий эффект
+
+Digital Hormones = то же самое для AI агента!
+```
+
+#### Как это работает (4 шага):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ЦИКЛ РАБОТЫ ГОРМОНА                                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ШАГ 1: СЕНСОРЫ ВИДЯТ ПРОБЛЕМУ                           │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  sensor_input = "budget_low"                        │   │
+│  │  sensor_input = "reputation_dropping"              │   │
+│  │  sensor_input = "curiosity_high"                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                         ↓                                  │
+│                                                             │
+│  ШАГ 2: ВЫБРОС ГОРМОНА                                   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  "budget_low" → produce("scarcity_hormone", 0.7)  │   │
+│  │  "reputation_dropping" → produce("repair_hormone")│   │
+│  │  "curiosity_high" → produce("exploration_hormone")│   │
+│  └─────────────────────────────────────────────────────┘   │
+│                         ↓                                  │
+│                                                             │
+│  ШАГ 3: ГОРМОН РАСПРОСТРАНЯЕТСЯ И ВЛИЯЕТ                │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  СКАЖЕМ: produce("scarcity_hormone", 0.7)         │   │
+│  │                                                       │   │
+│  │  Влияние на разные системы:                         │   │
+│  │  • Curiosity ↓ (зачем исследовать если мало        │   │
+│  │    ресурсов?)                                       │   │
+│  │  • Risk tolerance ↓ (не рисковать!)               │   │
+│  │  • Speed ↑ (надо быстрее!)                        │   │
+│  │  • Exploration ↓ (сфокусируйся на задаче)         │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                         ↓                                  │
+│                                                             │
+│  ШАГ 4: ГОРМОН РАСПАДАЕТСЯ                               │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  half_life = 30 минут                              │   │
+│  │                                                       │   │
+│  │  Через 30 минут: hormone_level = 0.7 * 0.5 = 0.35 │   │
+│  │  Через 60 минут: hormone_level = 0.35 * 0.5 = 0.17│   │
+│  │  Через 90 минут: ≈ 0.09 (почти нет)               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Математика (простая версия):
+
+```
+ПРЕДСТАВЬ ведро с водой:
+
+h(t+1) = h(t) + S(t) + R(t) + D(t) - K * h(t)
+     │
+     ├── h(t) = сколько воды в ведре сейчас
+     ├── S(t) = добавили из крана (сенсоры)
+     ├── R(t) = добавили из другого ведра (реакция)
+     ├── D(t) = добавили от соседей (диффузия)
+     └── K = дырка в ведре (распад)
+
+ЕСЛИ нет новой воды и K=0.1:
+• Минута 1: 1.0 ведра
+• Минута 2: 0.9 ведра  
+• Минута 3: 0.81 ведра
+• ...
+• Минута 10: 0.35 ведра
+• Минута 20: 0.12 ведра
+
+Это и есть РАСПАД гормона!
+```
+
+#### Реальный пример: Страх у робота
+
+```
+СИТУАЦИЯ: Робот чуть не упал с лестницы
+
+1. СЕНСОР: "edge_detected", "unsteady_balance"
+   → Выброс: cortisol_like_hormone += 0.8
+
+2. ГОРМОН ВЛИЯЕТ:
+   • Risk tolerance: 0.8 → 0.3 ("опасно!")
+   • Decision speed: normal → fast ("надо быстрее!")
+   • Curiosity: 0.6 → 0.2 ("не время исследовать!")
+   • Memory formation: усиленная запись этого события
+
+3. РОБОТ ДЕЙСТВУЕТ:
+   • Отходит от края
+   • Запоминает: "那里有边缘" (那里有边缘 = там есть край)
+   • Больше не подходит так близко
+
+4. РАСПАД:
+   Через 30 минут cortisol падает
+   Робот возвращается к нормальному поведению
+   
+ЧЕРЕЗ ЧАС:
+   cortisol ≈ 0.05 (почти ноль)
+   Риск-толерантность снова 0.8
+   Но память об опасности ОСТАЛАСЬ!
+```
+
+#### 🎯 ЧТО УКРАСТЬ ДЛЯ НАШЕЙ СИСТЕМЫ:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  КРАЖА #3: HormoneSystem — медленная модуляция                ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  ЧТО: Добавить "гормоны" которые медленно влияют на           ║
+║  поведение агента                                                ║
+║                                                                   ║
+║  НАША ТЕКУЩАЯ ПРОБЛЕМА:                                       ║
+║  Наши триггеры = быстрые реакции (как нервные импульсы).      ║
+║  Но нет МЕДЛЕННЫХ состояний - "настроения", если хочешь.      ║
+║                                                                   ║
+║  КАК УКРАСТЬ:                                                  ║
+║  ┌─────────────────────────────────────────────────────────┐     ║
+║  │  class HormoneSystem:                                   │     ║
+║  │      """Медленные модуляторы поведения"""               │     ║
+║  │                                                         │     ║
+║  │      hormones = {                                       │     ║
+║  │          "stress": Hormone(half_life_minutes=30),      │     ║
+║  │          "energy": Hormone(half_life_minutes=120),     │     ║
+║  │          "curiosity": Hormone(half_life_minutes=60),   │     ║
+║  │          "focus": Hormone(half_life_minutes=45),       │     ║
+║  │      }                                                  │     ║
+║  │                                                         │     ║
+║  │      def get_modulation(self):                          │     ║
+║  │          """Как гормоны влияют на решения"""            │     ║
+║  │          return {                                       │     ║
+║  │              "risk_tolerance": 0.8 - self.stress * 0.5,│     ║
+║  │              "exploration": 0.5 + self.curiosity * 0.3,│     ║
+║  │              "speed": 1.0 + self.stress * 0.5,        │     ║
+║  │          }                                              │     ║
+║  └─────────────────────────────────────────────────────────┘     ║
+║                                                                   ║
+║  ПОЧЕМУ УКРАСТЬ:                                               ║
+║  • Добавляет "настроение" агенту                              ║
+║  • Мягкие переходы между состояниями                          ║
+║  • Можно настраивать долгосрочное поведение                   ║
+║  • Биологически правдоподобно                                  ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 🏠 Homeostasis — Простым языком
+
+#### Аналогия: Термостат в доме
+
+```
+Ты знаешь как работает термостат?
+
+Зимой на улице холодно.
+Дома должно быть тепло.
+Термостат говорит: "Включи отопление!"
+
+Прошло время. Стало тепло.
+Термостат говорит: "Хватит, выключи отопление!"
+
+Это и есть ГОМЕОСТАЗ - поддержание нужной температуры.
+
+Температура в доме = "метрика"
+Желаемая температура (22°C) = "setpoint"
+Термостат = "homeostatic controller"
+```
+
+#### Как это работает в теле человека:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ГОМЕОСТАЗ В ТЕЛЕ                                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  МЕТРИКА           │ SETPOINT    │ ДЕЙСТВИЕ               │
+│  ──────────────────────────────────────────────────────────  │
+│  Температура тела  │ 36.6°C     │ Потеть / Дрожать      │
+│  Уровень сахара    │ 5.5 ммоль/л│ Есть / Не есть        │
+│  Кровяное давление │ 120/80     │ Расслабиться / etc    │
+│  Уровень воды      │ ~60%       │ Пить / Мочегонное     │
+└─────────────────────────────────────────────────────────────┘
+
+КОГДА ВСЁ НОРМАЛЬНО:
+Тело работает в штатном режиме
+
+КОГДА ОТКЛОНЕНИЕ:
+• Слишком жарко → потеем
+• Слишком холодно → дрожим  
+• Мало сахара → хотим есть
+• Много сахара → инсулин
+
+ЭТО ПРОИСХОДИТ АВТОМАТИЧЕСКИ!
+Не нужно думать "щас я попотею".
+Тело само регулирует.
+```
+
+#### Как это работает в AI агенте:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ГОМЕОСТАЗ В НАШЕМ АГЕНТЕ                                 │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  МЕТРИКА           │ SETPOINT    │ ЗОНА ОК    │ ДЕЙСТВИЕ  │
+│  ──────────────────────────────────────────────────────────  │
+│  Risk (Q)          │ 0.3        │ 0.2-0.4   │ СТОП!     │
+│  Quality (Ψ)       │ 0.8        │ 0.7-0.9   │ Улучшить  │
+│  Reputation (Υ)    │ 0.7        │ 0.6-0.8   │ REPAIR    │
+│  Curiosity (C)     │ 0.5        │ 0.3-0.7   │ Explore   │
+│  Budget (B)        │ 0.5        │ 0.3-0.7   │ Allocate  │
+└─────────────────────────────────────────────────────────────┘
+
+ПРИМЕР: Risk вышел из зоны
+┌─────────────────────────────────────────────────────────────┐
+│  СЕЙЧАС: Q(Risk) = 0.75 (ВЫШЕ ЗОНЫ 0.2-0.4!)            │
+│                                                             │
+│  1. HomeostaticController видит: deviation = 0.75 - 0.3   │
+│     deviation = +0.45 (выше нормы)                         │
+│                                                             │
+│  2. Генерирует drive: "снизь риск!"                        │
+│                                                             │
+│  3. Что происходит:                                        │
+│     • Trigger: FIRE_RISK_REDUCTION                         │
+│     • Hormone: produce("caution", 0.5)                     │
+│     • Action: выбрать более безопасный путь                │
+│                                                             │
+│  4. ЧЕРЕЗ ВРЕМЯ:                                          │
+│     Q(Risk) = 0.35 (вернулся в зону!)                     │
+│     Drive = 0 (ничего делать не нужно)                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Контроллер (простая версия):
+
+```
+Термостат с П-регулятором:
+
+drive = -gain * (current_value - target_value)
+
+Если current = 25°C, target = 22°C:
+  drive = -1 * (25 - 22) = -3 (выключить отопление!)
+
+Если current = 19°C, target = 22°C:
+  drive = -1 * (19 - 22) = +3 (включить отопление!)
+
+Если current = 21.5°C, target = 22°C:
+  drive = -1 * (21.5 - 22) = +0.5 (немного включить)
+  
+Если current = 22°C:
+  drive = 0 (идеально!)
+```
+
+#### 🎯 ЧТО УКРАСТЬ ДЛЯ НАШЕЙ СИСТЕМЫ:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
