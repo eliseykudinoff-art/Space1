@@ -7079,3 +7079,777 @@ U(t) = K_maturity · U_exploit + (1 - K_maturity) · U_explore
 ---
 
 *Обновлено: 2026-07-06 — capability_2 + FORMULAS_REFERENCE*
+
+---
+
+# 📋 ПРАКТИЧНЫЙ ПЛАН РЕАЛИЗАЦИИ (2026-07-08)
+
+## Отправная точка
+
+**Что уже есть и работает:**
+- ✅ `atomic_decomposer.py` — декомпозиция задач
+- ✅ `router.py` — маршрутизация между провайдерами  
+- ✅ `memory.py` — file-based хранилище
+
+**Что нужно построить (core):**
+- 🎯 Homeostatic Orchestrator — центр системы
+- 🎯 Signal Bridge — как метрики влияют на поведение
+- 🎯 Feedback Loop — как агент учится
+
+---
+
+## АРХИТЕКТУРА MVP
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    HOMEOSTATIC ORCHESTRATOR                     │
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              HOMEOSTATIC STATE (Центральное состояние)   │  │
+│   │                                                          │  │
+│   │   balance:     $balance / budget_target                  │  │
+│   │   reputation:  current_rating / target_rating           │  │
+│   │   workload:    active_tasks / max_capacity               │  │
+│   │   quality:     recent_quality_avg                       │  │
+│   │   stress:      derived from all above                    │  │
+│   │                                                          │  │
+│   │   H = f(balance, reputation, workload, quality, stress) │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              │                                │
+│                              ▼                                │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              SIGNAL BRIDGE                              │  │
+│   │   H_state → behavioral_context → prompt_modulation      │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              │                                │
+│   ┌───────────┐    ┌─────────┴────────┐    ┌───────────────┐ │
+│   │  SHIELD   │    │   TASK ESTIMATOR│    │    EXECUTOR   │ │
+│   │  Γ-layer  │    │   Φ, Q, Ψ       │    │   → Router    │ │
+│   └───────────┘    └──────────────────┘    └───────┬───────┘ │
+│                              │                     │          │
+│                              ▼                     ▼          │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              FEEDBACK LOOP                             │  │
+│   │   result → update_state → recalculate_H               │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ФАЗА 1: Homeostatic State + Shield Layer (День 1-3)
+
+### 1.1 Homeostatic State
+
+```python
+# homeostatic_state.py
+
+from dataclasses import dataclass, field
+from typing import Dict, Optional
+from enum import Enum
+
+class StressLevel(Enum):
+    LOW = "low"           # H > 1.2
+    NORMAL = "normal"     # 0.8 < H < 1.2
+    HIGH = "high"          # 0.5 < H < 0.8
+    CRITICAL = "critical"  # H < 0.5
+
+@dataclass
+class HomeostaticVariables:
+    """Гомеостатические переменные — центральное состояние агента."""
+    
+    # Текущие значения
+    balance: float = 1000.0          # $ текущий баланс
+    budget_target: float = 500.0     # $ целевой остаток
+    balance_min: float = 100.0       # $ критический минимум
+    
+    rating: float = 4.0             # текущий рейтинг
+    rating_target: float = 4.5       # целевой рейтинг
+    
+    active_tasks: int = 0            # активные задачи
+    max_capacity: int = 5           # максимальная ёмкость
+    
+    quality_history: list = field(default_factory=list)  # последние оценки
+    quality_target: float = 0.85     # целевое качество
+    
+    # Внутренние метрики (вычисляемые)
+    _balance_ratio: float = 1.0
+    _rating_ratio: float = 1.0
+    _workload_ratio: float = 0.0
+    _quality_ratio: float = 1.0
+    _stress: float = 0.0
+    _H: float = 1.0
+    
+    def compute_state(self):
+        """Вычисляет внутренние метрики и H."""
+        # Баланс: ниже минимума = критический
+        if self.balance < self.balance_min:
+            self._balance_ratio = 0.1
+        elif self.balance < self.budget_target:
+            self._balance_ratio = self.balance / self.budget_target
+        else:
+            self._balance_ratio = 1.0
+        
+        # Рейтинг: ниже цели = проблема
+        self._rating_ratio = self.rating / self.rating_target
+        self._rating_ratio = min(1.0, self._rating_ratio)
+        
+        # Нагрузка: близость к максимуму
+        self._workload_ratio = self.active_tasks / self.max_capacity
+        
+        # Качество: скользящее среднее
+        if self.quality_history:
+            self._quality_ratio = sum(self.quality_history) / len(self.quality_history)
+            self._quality_ratio = min(1.0, self._quality_ratio / self.quality_target)
+        else:
+            self._quality_ratio = 1.0
+        
+        # Стресс = взвешенная девиация от целей
+        self._stress = (
+            0.3 * (1 - self._balance_ratio) +
+            0.3 * (1 - self._rating_ratio) +
+            0.2 * self._workload_ratio +
+            0.2 * (1 - self._quality_ratio)
+        )
+        
+        # H = гомеостатический индекс
+        self._H = (1 - self._stress)
+        
+        return self
+    
+    @property
+    def H(self) -> float:
+        return self._H
+    
+    @property
+    def stress_level(self) -> StressLevel:
+        if self._H > 1.2:
+            return StressLevel.LOW
+        elif self._H > 0.8:
+            return StressLevel.NORMAL
+        elif self._H > 0.5:
+            return StressLevel.HIGH
+        else:
+            return StressLevel.CRITICAL
+    
+    def get_context_for_llm(self) -> Dict:
+        """Возвращает контекст для LLM промпта."""
+        return {
+            "H": round(self._H, 2),
+            "stress": self.stress_level.value,
+            "balance_healthy": self._balance_ratio > 0.5,
+            "rating_healthy": self._rating_ratio > 0.8,
+            "capacity_available": self._workload_ratio < 0.8,
+            "quality_ok": self._quality_ratio > 0.7,
+            "recommendations": self._get_recommendations()
+        }
+    
+    def _get_recommendations(self) -> list:
+        """Генерирует рекомендации на основе состояния."""
+        recs = []
+        if self._balance_ratio < 0.3:
+            recs.append("CRITICAL: Low balance. Prioritize high-paying tasks.")
+        elif self._balance_ratio < 0.7:
+            recs.append("WARNING: Balance below target. Focus on revenue.")
+        
+        if self._rating_ratio < 0.8:
+            recs.append("WARNING: Rating below target. Prioritize quality.")
+        
+        if self._workload_ratio > 0.8:
+            recs.append("WARNING: Near capacity. Decline new tasks.")
+        
+        if self._quality_ratio < 0.7:
+            recs.append("WARNING: Quality declining. Slow down, verify more.")
+        
+        return recs
+    
+    def record_task_result(self, success: bool, quality: float, payment: float):
+        """Обновляет состояние после выполнения задачи."""
+        if payment > 0:
+            self.balance += payment
+        
+        if success and 0 <= quality <= 1:
+            self.quality_history.append(quality)
+            self.quality_history = self.quality_history[-10:]  # последние 10
+        
+        self.compute_state()
+```
+
+### 1.2 Shield Layer (Γ)
+
+```python
+# shield_layer.py
+
+from dataclasses import dataclass
+from typing import List, Callable
+from enum import Enum
+
+class ShieldResult(Enum):
+    PASS = "pass"
+    REJECT = "reject"
+    CLARIFY = "clarify"
+
+@dataclass
+class ShieldRule:
+    """Одно правило shield."""
+    name: str
+    check: Callable[[dict, 'HomeostaticState'], bool]
+    reject_reason: str
+    priority: int = 0
+
+class ShieldLayer:
+    """
+    Γ (Compliance) — бинарный veto layer.
+    
+    В отличие от математической абстракции Γ = 0/-∞,
+    здесь реальные правила с понятными действиями.
+    """
+    
+    def __init__(self, state: 'HomeostaticState'):
+        self.state = state
+        self.rules: List[ShieldRule] = []
+        self._register_default_rules()
+    
+    def _register_default_rules(self):
+        """Регистрирует базовые правила."""
+        
+        # Финансовые правила
+        self.rules.append(ShieldRule(
+            name="min_balance",
+            check=lambda task, state: state.balance >= 100,
+            reject_reason="Balance below minimum threshold",
+            priority=100
+        ))
+        
+        self.rules.append(ShieldRule(
+            name="cost_limit",
+            check=lambda task, state: task.get('estimated_cost', 0) <= state.balance * 0.5,
+            reject_reason="Task cost exceeds budget limit",
+            priority=90
+        ))
+        
+        # Нагрузочные правила
+        self.rules.append(ShieldRule(
+            name="capacity",
+            check=lambda task, state: state.active_tasks < state.max_capacity,
+            reject_reason="At maximum capacity",
+            priority=80
+        ))
+        
+        # Качественные правила
+        self.rules.append(ShieldRule(
+            name="rating_threshold",
+            check=lambda task, state: state.rating >= 3.5,
+            reject_reason="Rating below platform minimum",
+            priority=70
+        ))
+        
+        # Стрессовые правила
+        self.rules.append(ShieldRule(
+            name="critical_stress",
+            check=lambda task, state: state.stress_level != StressLevel.CRITICAL,
+            reject_reason="System in critical stress state",
+            priority=200  # highest priority
+        ))
+        
+        self.rules.sort(key=lambda r: r.priority, reverse=True)
+    
+    def check(self, task: dict) -> tuple[ShieldResult, str]:
+        """Проверяет задачу на соответствие правилам."""
+        for rule in self.rules:
+            if not rule.check(task, self.state):
+                return ShieldResult.REJECT, f"{rule.name}: {rule.reject_reason}"
+        
+        if self.state.stress_level == StressLevel.HIGH:
+            return ShieldResult.CLARIFY, "High stress - clarify before proceeding"
+        
+        return ShieldResult.PASS, "All checks passed"
+```
+
+---
+
+## ФАЗА 2: Signal Bridge + Task Estimator (День 4-7)
+
+### 2.1 Signal Bridge (Ключевой компонент)
+
+```python
+# signal_bridge.py
+
+from homeostatic_state import HomeostaticState, StressLevel
+
+class SignalBridge:
+    """
+    Бинарный сигнал → контекст для LLM.
+    
+    Это мост между внутренним состоянием агента и поведением LLM.
+    Решает главный пробел: "бинарный сигнал нельзя подать на вход LLM".
+    
+    Вместо бинарного сигнала используется непрерывное состояние H,
+    которое модулирует промт.
+    """
+    
+    SYSTEM_PROMPTS = {
+        StressLevel.LOW: """
+You are a confident, established AI agent. Focus on:
+- Maximizing value for clients
+- Building long-term relationships
+- Taking calculated risks for growth
+- Maintaining your high standards
+""",
+        
+        StressLevel.NORMAL: """
+You are a reliable AI agent balancing quality and efficiency. Focus on:
+- Delivering good work on time
+- Maintaining your reputation
+- Building sustainable practice
+- Making reasonable profits
+""",
+        
+        StressLevel.HIGH: """
+You are a stressed AI agent. IMPORTANT CONTEXT:
+- Resources are limited, be conservative
+- Quality is suffering, double-check your work
+- Prioritize stability over growth
+- Be more cautious with client promises
+- Consider declining marginal tasks
+""",
+        
+        StressLevel.CRITICAL: """
+YOU ARE IN CRISIS MODE. CRITICAL CONTEXT:
+- Immediate action required to stabilize
+- Minimize all non-essential spending
+- Focus ONLY on highest-confidence tasks
+- Consider pausing new client acquisition
+- Verify everything twice before delivery
+"""
+    }
+    
+    TASK_MODIFIERS = {
+        "low_budget": "This task has lower budget - efficiency is important.",
+        "high_stakes": "This task affects your reputation - quality is critical.",
+        "tight_deadline": "Time is limited - prioritize ruthlessly.",
+        "learning_opportunity": "This task offers learning - consider accepting even at lower margin.",
+        "repeat_client": "This is a returning client - prioritize their satisfaction.",
+    }
+    
+    def __init__(self, state: HomeostaticState):
+        self.state = state
+    
+    def get_system_prompt(self) -> str:
+        """Возвращает модифицированный системный промт."""
+        base_prompt = self.SYSTEM_PROMPTS.get(
+            self.state.stress_level,
+            self.SYSTEM_PROMPTS[StressLevel.NORMAL]
+        )
+        
+        recommendations = self.state.get_context_for_llm()
+        if recommendations["recommendations"]:
+            base_prompt += "\n\nCURRENT SITUATION:\n"
+            base_prompt += "\n".join(f"- {r}" for r in recommendations["recommendations"])
+        
+        return base_prompt
+    
+    def get_task_modifiers(self, task: dict) -> list:
+        """Возвращает список модификаторов для конкретной задачи."""
+        modifiers = []
+        
+        if self.state._balance_ratio < 0.3:
+            modifiers.append(self.TASK_MODIFIERS["low_budget"])
+        elif self.state._balance_ratio < 0.5:
+            modifiers.append("Budget is tightening - be mindful of resource usage.")
+        
+        if self.state._rating_ratio < 0.9:
+            modifiers.append(self.TASK_MODIFIERS["high_stakes"])
+        
+        if self.state._quality_ratio < 0.8:
+            modifiers.append("Recent quality issues detected - extra verification recommended.")
+        
+        return modifiers
+    
+    def should_decline_task(self, task: dict, estimated_phi: float) -> tuple[bool, str]:
+        """Решает, стоит ли брать задачу, на основе состояния."""
+        if self.state.stress_level == StressLevel.CRITICAL:
+            if estimated_phi < 50:
+                return True, "Critical state: only high-value tasks"
+            if task.get('risk_level') == 'high':
+                return True, "Critical state: avoiding risky tasks"
+        
+        if self.state.stress_level == StressLevel.HIGH:
+            if estimated_phi < 30:
+                return True, "High stress: need higher margin"
+            if task.get('complexity') > 0.8:
+                return True, "High stress: avoiding complex tasks"
+        
+        if self.state._balance_ratio < 0.2:
+            if estimated_phi < 40:
+                return True, "Low balance: need better rates"
+        
+        return False, "Task acceptable"
+```
+
+### 2.2 Task Estimator
+
+```python
+# task_estimator.py
+
+from dataclasses import dataclass
+
+@dataclass
+class TaskEstimate:
+    """Оценка задачи."""
+    phi: float          # $/hour expected profit rate
+    quality: float     # 0-1 expected quality
+    risk: float         # 0-1 risk level
+    clarity: float       # 0-1 how clear the task is
+    complexity: float   # 0-1 estimated complexity
+    
+    def is_viable(self, min_phi: float = 20) -> bool:
+        return self.phi >= min_phi and self.risk < 0.8
+
+class TaskEstimator:
+    """
+    Ξ = α × Q - β × (O_time + O_cost)
+    
+    Упрощённая версия для MVP с token cost.
+    """
+    
+    def estimate(self, task: dict, state: 'HomeostaticState') -> TaskEstimate:
+        price = task.get('price', 0)
+        complexity = task.get('complexity', 0.5)
+        base_time_hours = task.get('estimated_hours', complexity * 4)
+        
+        clarity = self._estimate_clarity(task)
+        quality = 0.5 + 0.3 * clarity + 0.2 * state._quality_ratio
+        
+        risk = self._estimate_risk(task, clarity, state)
+        
+        # Token cost (включён!)
+        token_estimate = self._estimate_tokens(task)
+        token_cost = token_estimate * 0.00001  # ~$10/1M tokens
+        
+        compute_cost = task.get('compute_cost', 0)
+        total_cost = compute_cost + token_cost
+        
+        # Φ = (R - C) / T
+        net_profit = price - total_cost
+        phi = net_profit / base_time_hours if base_time_hours > 0 else 0
+        
+        return TaskEstimate(
+            phi=phi,
+            quality=min(1.0, quality),
+            risk=risk,
+            clarity=clarity,
+            complexity=complexity
+        )
+    
+    def _estimate_clarity(self, task: dict) -> float:
+        description = task.get('description', '')
+        requirements = task.get('requirements', [])
+        
+        score = 0.5
+        if len(description) > 100:
+            score += 0.1
+        if len(requirements) >= 3:
+            score += 0.2
+        if task.get('examples'):
+            score += 0.2
+        
+        return min(1.0, score)
+    
+    def _estimate_risk(self, task: dict, clarity: float, state) -> float:
+        risk = 0.3
+        risk += (1 - clarity) * 0.3
+        
+        complexity = task.get('complexity', 0.5)
+        if complexity > 0.7 and state._quality_ratio < 0.8:
+            risk += 0.2
+        
+        if task.get('deadline_hours', 100) < complexity * 2:
+            risk += 0.2
+        
+        return min(1.0, risk)
+    
+    def _estimate_tokens(self, task: dict) -> int:
+        desc_len = len(task.get('description', ''))
+        return int(desc_len * 1.5 + 500)
+```
+
+---
+
+## ФАЗА 3: Orchestrator + Feedback Loop (День 8-14)
+
+### 3.1 Homeostatic Orchestrator
+
+```python
+# orchestrator.py
+
+from homeostatic_state import HomeostaticState
+from shield_layer import ShieldLayer, ShieldResult
+from signal_bridge import SignalBridge
+from task_estimator import TaskEstimator
+from atomic_decomposer import AtomicDecomposer
+
+class Orchestrator:
+    """
+    Главный оркестратор агента.
+    
+    Собирает все компоненты вместе:
+    - HomeostaticState (центральное состояние)
+    - ShieldLayer (Γ защита)
+    - SignalBridge (H → поведение)
+    - TaskEstimator (Φ, Q, Ψ)
+    - AtomicDecomposer (существующий)
+    """
+    
+    def __init__(self):
+        self.state = HomeostaticState()
+        self.shield = ShieldLayer(self.state)
+        self.bridge = SignalBridge(self.state)
+        self.estimator = TaskEstimator()
+        self.decomposer = AtomicDecomposer()
+    
+    def process_task(self, task: dict) -> dict:
+        """Основной цикл обработки задачи."""
+        
+        # ШАГ 1: Оценка задачи
+        estimate = self.estimator.estimate(task, self.state)
+        
+        # ШАГ 2: Shield check (Γ)
+        shield_result, reason = self.shield.check(task)
+        
+        if shield_result == ShieldResult.REJECT:
+            return {"action": "REJECT", "reason": reason, "estimate": estimate}
+        
+        if shield_result == ShieldResult.CLARIFY:
+            return {
+                "action": "CLARIFY",
+                "reason": reason,
+                "estimate": estimate,
+                "clarify_questions": self._generate_clarify_questions(task)
+            }
+        
+        # ШАГ 3: Signal-based decline check
+        decline, decline_reason = self.bridge.should_decline_task(task, estimate.phi)
+        if decline:
+            return {"action": "DECLINE", "reason": decline_reason, "estimate": estimate}
+        
+        # ШАГ 4: Генерация контекста для LLM
+        llm_context = self._build_llm_context(task, estimate)
+        
+        # ШАГ 5: Декомпозиция
+        if estimate.complexity > 0.5:
+            decomposition = self.decomposer.decompose(task)
+        else:
+            decomposition = None
+        
+        return {
+            "action": "EXECUTE",
+            "reason": "All checks passed",
+            "estimate": estimate,
+            "llm_context": llm_context,
+            "decomposition": decomposition
+        }
+    
+    def record_result(self, task: dict, result: dict):
+        """Feedback loop: записывает результат и обновляет состояние."""
+        success = result.get('success', False)
+        quality = result.get('quality', 0.5)
+        payment = result.get('payment', 0)
+        
+        self.state.record_task_result(
+            success=success,
+            quality=quality if success else 0,
+            payment=payment
+        )
+    
+    def _build_llm_context(self, task: dict, estimate: TaskEstimate) -> dict:
+        return {
+            "system_prompt": self.bridge.get_system_prompt(),
+            "task_modifiers": self.bridge.get_task_modifiers(task),
+            "task_info": {
+                "complexity": estimate.complexity,
+                "expected_quality": estimate.quality,
+                "risk_level": "high" if estimate.risk > 0.6 else "normal"
+            },
+            "homeostatic_state": self.state.get_context_for_llm()
+        }
+    
+    def _generate_clarify_questions(self, task: dict) -> list:
+        questions = []
+        if len(task.get('requirements', [])) < 2:
+            questions.append("Can you list specific requirements?")
+        if not task.get('deadline'):
+            questions.append("What is the deadline for this task?")
+        if not task.get('acceptance_criteria'):
+            questions.append("How will you evaluate successful completion?")
+        return questions
+```
+
+### 3.2 Feedback Loop
+
+```python
+# feedback_loop.py
+
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class Outcome:
+    """Запись исхода задачи."""
+    timestamp: float
+    task_id: str
+    expected_phi: float
+    actual_phi: float
+    expected_quality: float
+    actual_quality: float
+    success: bool
+    error: Optional[str] = None
+
+class FeedbackLoop:
+    """
+    Feedback loop — критический компонент для обучения агента.
+    
+    Схема: Metrics_t → Action → Observe → Metrics_{t+1}
+    """
+    
+    def __init__(self, window_size: int = 100):
+        self.outcomes: list[Outcome] = []
+        self.window_size = window_size
+        self.phi_bias = 0.0
+        self.quality_bias = 0.0
+    
+    def record(self, outcome: Outcome):
+        """Записывает исход."""
+        self.outcomes.append(outcome)
+        
+        if len(self.outcomes) > self.window_size:
+            self.outcomes = self.outcomes[-self.window_size:]
+        
+        self._update_biases()
+    
+    def _update_biases(self):
+        """Обновляет систематические ошибки."""
+        if not self.outcomes:
+            return
+        
+        phi_errors = [
+            o.actual_phi - o.expected_phi 
+            for o in self.outcomes 
+            if o.actual_phi is not None
+        ]
+        if phi_errors:
+            self.phi_bias = sum(phi_errors) / len(phi_errors)
+        
+        quality_errors = [
+            o.actual_quality - o.expected_quality 
+            for o in self.outcomes 
+            if o.actual_quality is not None
+        ]
+        if quality_errors:
+            self.quality_bias = sum(quality_errors) / len(quality_errors)
+    
+    def get_calibration_factor(self) -> float:
+        """Возвращает фактор калибровки для оценок."""
+        return 1.0 - (self.phi_bias / max(abs(self.phi_bias), 1) * 0.2) if abs(self.phi_bias) > 5 else 1.0
+    
+    def get_recent_accuracy(self) -> float:
+        """Точность последних предсказаний."""
+        if not self.outcomes:
+            return 1.0
+        
+        recent = self.outcomes[-20:]
+        correct = sum(1 for o in recent if o.success)
+        return correct / len(recent)
+```
+
+---
+
+## ИТОГОВАЯ АРХИТЕКТУРА
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        HOMEOSTATIC ORCHESTRATOR                        │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │                    HOMEOSTATIC STATE                              │  │
+│  │   balance ──┐                                                    │  │
+│  │   rating ───┼──→ compute_state() ──→ H, stress_level            │  │
+│  │   workload ─┤                                                    │  │
+│  │   quality ──┘                                                    │  │
+│  └────────────────────────┬────────────────────────────────────────┘  │
+│                           │                                            │
+│         ┌─────────────────┼─────────────────┐                        │
+│         ▼                 ▼                 ▼                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ SHIELD Γ     │  │ SIGNAL BRIDGE│  │ TASK ESTIMATOR│              │
+│  │              │  │              │  │              │              │
+│  │ PASS/REJECT/ │  │ H → prompt   │  │ Φ, Q, Ψ      │              │
+│  │ CLARIFY      │  │ modulation   │  │              │              │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
+│         │                  │                 │                      │
+│         └──────────────────┼─────────────────┘                      │
+│                            ▼                                          │
+│                   ┌─────────────────┐                                │
+│                   │   DECISION      │                                │
+│                   │   REJECT        │                                │
+│                   │   CLARIFY       │                                │
+│                   │   EXECUTE       │                                │
+│                   └────────┬────────┘                                │
+│                            │                                          │
+│         ┌─────────────────┼─────────────────┐                      │
+│         ▼                 ▼                 ▼                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ DECOMPOSER  │  │   MEMORY     │  │   ROUTER     │              │
+│  │ (existing)  │  │   (existing) │  │   (existing) │              │
+│  └──────────────┘  └──────────────┘  └──────────────┘              │
+│                            │                                          │
+│                            ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐│
+│  │                      FEEDBACK LOOP                                ││
+│  │  result ──→ record() ──→ update_bias() ──→ calibrate()       ││
+│  └────────────────────────┬──────────────────────────────────────────┘│
+│                         │                                            │
+└─────────────────────────┼────────────────────────────────────────────┘
+```
+
+---
+
+## ПОРЯДОК РЕАЛИЗАЦИИ
+
+| День | Компонент | Тест |
+|------|----------|------|
+| 1-3 | `homeostatic_state.py` + `shield_layer.py` | Unit tests на состояния |
+| 4-7 | `signal_bridge.py` + `task_estimator.py` | Интеграция с mock задачами |
+| 8-14 | `orchestrator.py` + `feedback_loop.py` | End-to-end тест |
+| 15-21 | Интеграция с `atomic_decomposer.py`, `memory.py`, `router.py` | Реальные задачи |
+
+---
+
+## ЧТО ВЗЯТО ОТ КАЖДОЙ СИСТЕМЫ
+
+| Компонент | Источник | Что именно |
+|----------|----------|-----------|
+| **Homeostatic State** | Freelancer Architecture | Гомеостаз как центральный механизм |
+| **H = f(state)** | Space1 | Математическая формализация H |
+| **Shield Layer Γ** | Space1 | Binary veto концепция |
+| **Signal Bridge** | Freelancer (bridge concept) | Как модулировать поведение |
+| **Feedback Loop** | Freelancer | drive-reduction паттерн |
+| **Task Estimator** | Space1 (Φ, Q, Ψ) | Математика оценки задач |
+| **Decomposer** | Space1 (существующий) | Декомпозиция задач |
+
+---
+
+## КРИТИЧЕСКИЙ ПРОБЕЛ: Binary Signal → Prompt
+
+Этот план решает **главный пробел** через:
+
+1. **Homeostatic State** — непрерывное состояние вместо бинарного
+2. **Signal Bridge** — модуляция промтов на основе H
+3. **Feedback Loop** — замыкание цикла для обучения
+
+Token cost и Γ как shield — straightforward исправления.
+
+---
+
+*Добавлено: 2026-07-08 — Практичный план реализации MVP*
