@@ -46,7 +46,7 @@
 | Фаза | Статус |
 |------|--------|
 | Pre-MVP | ✅ Завершён (7/7) |
-| Phase 1 | ⚪ Ожидает |
+| Phase 1 | ✅ Завершён (3/3) |
 | Phase 2 | ⚪ Ожидает |
 
 ### Pre-MVP Выполнено
@@ -54,13 +54,18 @@
 - G15: NAMING_CONVENTION, G16: Mission hierarchy
 - G20: Notation, G23: Task model
 
-### Тесты: 49 passed ✅
+### Phase 1 Выполнено
+- G5: TokenCostTracker
+- G11: Data classes (Task, Agent, AgentContext)
+- G14: MetricRegistry
+
+### Тесты: 68 passed ✅
 
 ---
 
 ## 📌 СЛЕДУЮЩИЙ ШАГ
 
-**Phase 1: Foundation** — G5, G11, G14, G23
+**Phase 2: Utility Functions** — G6, G7, G8, G9, G17, G18
 
 ---
 

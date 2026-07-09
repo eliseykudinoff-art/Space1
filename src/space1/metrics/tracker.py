@@ -196,7 +196,6 @@ class MetricsEngine:
         
         Note: Full implementation in Phase 2
         """
-        # Placeholder for now
         return 0.0
     
     def compute_psi(self, task: Any) -> float:
@@ -214,3 +213,98 @@ class MetricsEngine:
     def get(self, metric: str, default: Optional[float] = None) -> Optional[float]:
         """Shortcut for tracker.get()."""
         return self.tracker.get(metric, default)
+
+
+class MetricRegistry:
+    """
+    Единый источник истины для всех метрик агента.
+    
+    G14: MetricRegistry — Single source of truth
+    
+    Все метрики системы собираются здесь:
+    - Гомеостатические переменные
+    - Финансовые метрики
+    - Репутационные метрики
+    - Операционные метрики
+    
+    Usage:
+        registry = MetricRegistry()
+        registry.track("balance", 100.0)
+        registry.track("rating", 4.5)
+        
+        # Получить все метрики
+        all_metrics = registry.get_all()
+        
+        # Получить историю
+        history = registry.get_history("balance")
+    """
+    
+    # Категории метрик
+    CATEGORIES = {
+        "financial": ["balance", "total_earned", "total_spent", "revenue_rate"],
+        "reputation": ["rating", "n_reviews", "n_positive", "retention_rate"],
+        "operational": ["success_rate", "avg_task_time", "n_active_tasks", "utilization"],
+        "cost": ["token_cost", "api_cost", "tool_cost"],
+        "homeostatic": ["stress_level", "capacity_utilization", "reputation_health"],
+    }
+    
+    def __init__(self):
+        self._tracker = MetricTracker(default_alpha=0.2)
+        self._categories: Dict[str, list] = self.CATEGORIES.copy()
+    
+    def track(self, metric: str, value: float, 
+              category: Optional[str] = None,
+              alpha: Optional[float] = None) -> float:
+        """
+        Track a metric with EMA smoothing.
+        
+        Args:
+            metric: Metric name
+            value: New value
+            category: Optional category for organization
+            alpha: EMA smoothing factor
+        """
+        result = self._tracker.update(metric, value, alpha)
+        
+        if category and metric not in self._categories.get(category, []):
+            if category not in self._categories:
+                self._categories[category] = []
+            self._categories[category].append(metric)
+        
+        return result
+    
+    def get(self, metric: str, default: Optional[float] = None) -> Optional[float]:
+        """Get current EMA value for a metric."""
+        return self._tracker.get(metric, default)
+    
+    def get_all(self) -> Dict[str, float]:
+        """Get all current metric values."""
+        return self._tracker.get_all()
+    
+    def get_by_category(self, category: str) -> Dict[str, float]:
+        """Get all metrics in a category."""
+        metrics = self._categories.get(category, [])
+        return {m: self._tracker.get(m, 0.0) for m in metrics}
+    
+    def get_categories(self) -> list:
+        """Get list of all categories."""
+        return list(self._categories.keys())
+    
+    def get_history(self, metric: str, n: Optional[int] = None) -> list:
+        """Get metric history."""
+        return self._tracker.get_history(metric, n)
+    
+    def get_stats(self, metric: str) -> Dict[str, float]:
+        """Get statistics for a metric."""
+        return self._tracker.get_stats(metric)
+    
+    def reset(self, metric: Optional[str] = None) -> None:
+        """Reset metrics."""
+        self._tracker.reset(metric)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize registry state."""
+        return {
+            "metrics": self.get_all(),
+            "categories": self._categories,
+        }
