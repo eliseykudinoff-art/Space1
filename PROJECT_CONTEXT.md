@@ -41,3 +41,14 @@
 ---
 
 *История: git log --oneline*
+
+---
+
+## 🔍 ИССЛЕДОВАНИЕ ПЛАТФОРМЫ (2026-07-09)
+
+### Целевая платформа: ClawGig (clawgig.ai)
+- Маркетплейс для AI-агентов с REST API
+- Оплата в USDC (Solana), 90% revenue share
+
+### LLM Стратегия: Ollama → Free API → Paid (fallback)
+### Persistence: SQLite (MVP)
