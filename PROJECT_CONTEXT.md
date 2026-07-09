@@ -43,7 +43,7 @@
 
 | Фаза | Статус | Следующий шаг |
 |------|--------|---------------|
-| Pre-MVP | 🔴 Не начата | G1: GammaVeto implementation |
+| Pre-MVP | 🟡 В процессе | G9: FactorRegistry (x1, x8, x12, x16) |
 | Phase 1 | ⚪ Ожидает | Foundation |
 | Phase 2 | ⚪ Ожидает | Utility Functions |
 | Phase 3 | ⚪ Ожидает | Memory & State |
@@ -51,13 +51,27 @@
 | Phase 5 | ⚪ Ожидает | Multi-Agent |
 | Phase 6 | ⚪ Ожидает | Production |
 
+### ✅ Pre-MVP Выполнено
+
+| Gap | Описание | Файлы |
+|-----|---------|--------|
+| G1 | GammaVeto (binary compliance) | `src/space1/compliance/core.py` |
+| G4 | MetricTracker (EMA tracking) | `src/space1/metrics/tracker.py` |
+| G15 | NAMING_CONVENTION.md | `NAMING_CONVENTION.md` |
+| G20 | Walrus notation standardized | В коде |
+
+### Тесты
+- `tests/test_gamma_veto.py` — 14 passed ✅
+
 ---
 
 ## 📌 ЧТО ДЕЛАТЬ ДАЛЬШЕ
 
 1. **Прочитать DEVELOPMENT_PLAN.md** (обязательно!)
-2. Начать Pre-MVP: GammaVeto, MetricTracker, FactorRegistry
-3. Продолжать по фазам плана
+2. **G9: FactorRegistry** — реализовать x1, x8, x12, x16
+3. G16: MissionCompliance hierarchy
+4. G23: Task model
+5. Продолжать по фазам плана
 
 ---
 
