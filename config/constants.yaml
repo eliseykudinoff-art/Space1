@@ -1,0 +1,37 @@
+# Space1 — System Constants
+# Базовые константы модели
+# Эти значения НЕ оптимизируются напрямую
+
+# Success Rate
+success_rate_base: 0.3  # S_0 — базовый success rate
+
+# Throughput
+throughput_base: 1.0  # Q_0 — задач/час
+
+# Cost
+cost_base: 0.0  # C_0 — базовый cost ($/задача)
+
+# Time
+time_base: 1.0  # T_0 — час/задача
+
+# Price
+price_per_task: 50.0  # P — цена за задачу ($)
+
+# Learning
+learning_rate: 0.01  # η — скорость обучения
+knowledge_max: 1.0  # K_max — максимальное knowledge
+initial_knowledge: 0.0  # K_0
+
+# Skill
+skill_max: 1.0  # L_max
+initial_skill: 0.0  # L_0
+
+# EMA smoothing
+ema_default_alpha: 0.2  # α для EMA smoothing
+
+# Гомеостаз
+homeostasis_target: 1.0  # Γ_target — целевой гомеостазис
+
+# Rating
+rating_min: 1.0  # R_min
+rating_max: 5.0  # R_max

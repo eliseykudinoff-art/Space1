@@ -1,0 +1,113 @@
+# Space1 — Model Prices
+# Цены на LLM модели за 1M токенов (input, output)
+# Обновлять по мере изменения цен на API
+
+# =============================================================================
+# OPENAI
+# =============================================================================
+openai:
+  gpt-4o:
+    input: 5.0      # $5.00 / 1M
+    output: 15.0     # $15.00 / 1M
+    context_window: 128000
+    description: "Latest GPT-4o"
+  
+  gpt-4o-mini:
+    input: 0.15     # $0.15 / 1M
+    output: 0.60     # $0.60 / 1M
+    context_window: 128000
+    description: "Fast and cheap"
+  
+  gpt-4-turbo:
+    input: 10.0
+    output: 30.0
+    context_window: 128000
+    description: "GPT-4 Turbo"
+  
+  gpt-3.5-turbo:
+    input: 0.5
+    output: 1.5
+    context_window: 16385
+    description: "Legacy cheap model"
+
+# =============================================================================
+# ANTHROPIC
+# =============================================================================
+anthropic:
+  claude-3-5-sonnet:
+    input: 3.0
+    output: 15.0
+    context_window: 200000
+    description: "Latest Claude Sonnet"
+  
+  claude-3-opus:
+    input: 15.0
+    output: 75.0
+    context_window: 200000
+    description: "Most capable"
+  
+  claude-3-haiku:
+    input: 0.25
+    output: 1.25
+    context_window: 200000
+    description: "Fast and cheap"
+
+# =============================================================================
+# OLLAMA / LOCAL (free)
+# =============================================================================
+ollama:
+  llama3:
+    input: 0.0
+    output: 0.0
+    context_window: 8192
+    description: "Meta Llama 3"
+  
+  llama3.1:
+    input: 0.0
+    output: 0.0
+    context_window: 128000
+    description: "Meta Llama 3.1"
+  
+  mistral:
+    input: 0.0
+    output: 0.0
+    context_window: 8192
+    description: "Mistral AI"
+  
+  codellama:
+    input: 0.0
+    output: 0.0
+    context_window: 16384
+    description: "Code specialized"
+
+# =============================================================================
+# TOOL COSTS (per call)
+# =============================================================================
+tools:
+  browser: 0.01
+  file_read: 0.001
+  file_write: 0.001
+  web_search: 0.005
+  code_execution: 0.02
+  api_call: 0.001
+
+# =============================================================================
+# TIER SELECTION THRESHOLDS
+# =============================================================================
+tiers:
+  # Based on budget ($)
+  free:
+    max_budget: 1.0
+    models: ["ollama/*"]
+  
+  budget:
+    max_budget: 10.0
+    models: ["ollama/*", "openai/gpt-3.5-turbo"]
+  
+  premium:
+    max_budget: 100.0
+    models: ["openai/gpt-4o-mini", "anthropic/claude-3-haiku"]
+  
+  enterprise:
+    max_budget: 999999.0
+    models: ["openai/gpt-4o", "anthropic/claude-3-5-sonnet"]
