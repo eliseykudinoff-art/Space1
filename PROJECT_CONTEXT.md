@@ -57,11 +57,13 @@
 |-----|---------|--------|
 | G1 | GammaVeto (binary compliance) | `src/space1/compliance/core.py` |
 | G4 | MetricTracker (EMA tracking) | `src/space1/metrics/tracker.py` |
+| G9 | FactorRegistry (x1, x8, x12, x16) | `src/space1/factors/registry.py` |
 | G15 | NAMING_CONVENTION.md | `NAMING_CONVENTION.md` |
 | G20 | Walrus notation standardized | В коде |
 
 ### Тесты
 - `tests/test_gamma_veto.py` — 14 passed ✅
+- `tests/test_factor_registry.py` — 11 passed ✅
 
 ---
 
