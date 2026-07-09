@@ -28,6 +28,7 @@
 
 1. Начать кодить прототип на основе ACTION_FORMULA_WORKFLOW.md
 2. Интегрировать SYSTEM_MONITORING в агента
+2.1. Изучить ACTION_FORMULA_WORKFLOW.md и ACTION_FORMULA_CYBERNETICS.md для понимания маппинга формул в код
 3. Тестировать в OpenHands
 
 ---
