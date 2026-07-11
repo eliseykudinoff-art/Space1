@@ -3,8 +3,9 @@
 > **Статус:** ✅ СОСТАВЛЕН
 > **Дата:** 2026-07-09
 > **Автор:** OpenHands Agent
-> **Версия:** 1.0
+> **Версия:** 1.1
 > **Покрытие:** 100% идентифицированных пробелов (23/23)
+> **Уточнение 2026-07-11:** план пересмотрен по коду основной ветки/проекта; `docs/drafts/` считаются справочными материалами, а не источником текущей реализации.
 
 ---
 
@@ -22,8 +23,9 @@
 
 1. [Обзор пробелов](#1-обзор-пробелов)
 2. [Pre-MVP решения](#2-pre-mvp-решения)
-3. [Фазы разработки](#3-фазы-разработки)
-4. [Детальный план по пробелам](#4-детальный-план-по-пробелам)
+3. [Аудит текущего кода основной ветки](#3-аудит-текущего-кода-основной-ветки)
+4. [Уточнённые фазы разработки](#4-уточнённые-фазы-разработки)
+5. [Детальный план по пробелам](#5-детальный-план-по-пробелам)
 
 ---
 
@@ -122,7 +124,34 @@ Mission → Compliance → Utility → Execution
 
 ---
 
-## 3. ФАЗЫ РАЗРАБОТКИ
+
+## 3. АУДИТ ТЕКУЩЕГО КОДА ОСНОВНОЙ ВЕТКИ
+
+На 2026-07-11 текущая рабочая ветка репозитория содержит основной исполняемый код проекта, а `docs/drafts/` используется как справочная база с документацией и частичными/разрозненными идеями. Поэтому приоритет планирования смещён с «реализовать с нуля» на «довести существующие модули до связанной MVP-вертикали».
+
+### 3.1 Что уже реализовано и должно считаться базой
+
+| Область | Файлы | Вывод для плана |
+|---------|-------|-----------------|
+| Γ / compliance | `src/space1/compliance/core.py`, `config/rules.yaml` | Binary veto, rule registry и базовые правила уже есть; дальше нужен config-driven bootstrap и richer diagnostics. |
+| Метрики / feedback | `src/space1/metrics/tracker.py` | EMA tracker и MetricRegistry уже есть; дальше нужен не новый tracker, а подключение формул Φ/Ψ/Q/Υ/H к единому registry. |
+| Факторы | `src/space1/factors/registry.py`, `config/weights.yaml` | 17 FactorID и 4 MVP factors уже есть; Phase 2 должна добавить агрегатор/калькулятор и конфигурационные веса вместо дублирования констант. |
+| Cost | `src/space1/cost/token_tracker.py`, `config/prices.yaml` | Token/tool cost уже реализован; следующий шаг — включить его в Φ и унифицировать источник цен с YAML. |
+| Models | `src/space1/models/task.py`, `src/space1/models/agents.py` | Task/Agent/Context уже есть; нужно использовать их как контракт utility/orchestrator, не создавать параллельные модели. |
+| Mission pipeline | `src/space1/mission/core.py` | Mission → Compliance → Utility → Execution уже есть как skeleton; Phase 2 должна заменить pass-through utility реальным ранжированием действий. |
+| Config | `src/space1/config/loader.py`, `config/*.yaml` | YAML-конфигурация стала обязательной частью архитектуры; новые коэффициенты должны добавляться в YAML, а не хардкодиться в коде. |
+
+### 3.2 Ключевые корректировки относительно старого плана
+
+1. **Pre-MVP и Phase 1 считаются закрытыми по коду**, но требуют небольшого stabilization-прохода: публичные exports, docstrings, config-loader edge cases, отсутствие расхождения `NAMING_CONVENTION.md` с фактической структурой.
+2. **Phase 2 теперь начинается не с отдельных классов**, а с `space1/utility/` как слоя, который связывает существующие `Task`, `Agent`, `TokenCostTracker`, `FactorRegistry`, `MetricRegistry` и YAML-конфигурацию.
+3. **`docs/drafts/` больше не диктуют структуру модулей напрямую**: из них берутся формулы и смысловые ограничения, но контракт реализации определяется текущим кодом в `src/space1/`.
+4. **Главный MVP-инкремент** — end-to-end decision loop: вход `Task + AgentContext + candidate Actions`, затем Γ veto, расчёт Φ/Q/Ψ/Υ/H, risk-adjusted score, выбор действия, запись метрик.
+5. **Multi-agent, environment и transfer learning остаются поздними фазами**, пока single-agent utility loop не работает на реальных моделях данных и конфигурации.
+
+---
+
+## 4. УТОЧНЁННЫЕ ФАЗЫ РАЗРАБОТКИ
 
 ### Pre-MVP (0.5 дня)
 
@@ -159,21 +188,25 @@ Mission → Compliance → Utility → Execution
 
 ---
 
-### Phase 2: Utility Functions (2-3 недели)
+### Phase 2: Utility Functions & MVP Decision Loop (2-3 недели)
 
 | ID | Задача | Deliverable |
 |----|--------|-------------|
-| G6 | PID Controller | `PIDController` |
-| G7 | Risk-adjusted Φ | `RiskAdjustedProfit` |
-| G8 | Soft-capped Υ + EMA | `SoftCappedReputation` |
-| G9 | Factor calculator | `FactorCalculator` |
-| G17 | Ξ coefficients | `XiCalculator` |
-| G18 | Φ_R consistency | `PhiRCalculator` |
+| G5/G7 | `compute_phi()` с token/tool cost и risk-adjustment | `utility/profit.py` |
+| G8 | Soft-capped Υ + EMA поверх MetricRegistry | `utility/reputation.py` |
+| G9 | Factor calculator/aggregator для x₁, x₈, x₁₂, x₁₆ | `utility/factors.py` |
+| G6/G19 | PID/homeostasis controller как регулятор весов utility | `utility/control.py` |
+| G17/G18 | Ξ coefficients и Φ_R consistency | `utility/composite.py` |
+| Pipeline | Подключить utility scoring в `MissionProcessor` | `mission/core.py` |
+| Config | Все коэффициенты Phase 2 вынести в YAML | `config/*.yaml` |
 
 **Definition of Done:**
-- [ ] Все 6 функций (Φ, Q, Ψ, Υ, Γ, H) вычисляются
-- [ ] PID controller работает
-- [ ] 4 MVP фактора интегрированы
+- [ ] `compute_phi(task, agent, cost_tracker)` использует reward, time, token/tool cost и YAML constants
+- [ ] `compute_psi(task, agent_context)` учитывает uncertainty/fatigue/novelty/deadline/skill из существующих моделей
+- [ ] `compute_quality()` и `update_upsilon()` пишут значения через `MetricRegistry`/EMA
+- [ ] `FactorCalculator` агрегирует 4 MVP фактора из существующего `FactorRegistry` без хардкода весов
+- [ ] `MissionProcessor` выбирает лучшее действие по risk-adjusted utility после Γ veto
+- [ ] Есть тест end-to-end: Task + Agent + Actions → compliant ranked decision → metrics updated
 
 ---
 
@@ -237,7 +270,7 @@ Mission → Compliance → Utility → Execution
 
 ---
 
-## 4. ДЕТАЛЬНЫЙ ПЛАН ПО ПРОБЕЛАМ
+## 5. ДЕТАЛЬНЫЙ ПЛАН ПО ПРОБЕЛАМ
 
 ### G1: Γ Threshold
 
@@ -480,4 +513,4 @@ Production: Phase 6 (месяц 4)
 
 *Документ создан: 2026-07-09*
 *Статус: ✅ Составлен и согласован*
-*Следующий шаг: Начать Pre-MVP*
+*Следующий шаг: Phase 2 — связать существующие модули в MVP decision loop*

@@ -1,6 +1,6 @@
 # 📋 PROJECT CONTEXT
 
-**Обновлено:** 2026-07-09
+**Обновлено:** 2026-07-11
 **Проект:** Space1 (ранее Manus) — Автономный AI-агент Фрилансер
 **Статус:** ✅ Pre-MVP ЗАВЕРШЁН
 
@@ -65,8 +65,8 @@
 
 ## 📌 СЛЕДУЮЩИЙ ШАГ
 
-**Phase 2: Utility Functions** — G6, G7, G8, G9, G17, G18
+**Phase 2: Utility Functions & MVP Decision Loop** — использовать текущий код `src/space1/` как основу, а `docs/drafts/` только как справочник формул. Приоритет: связать `Task`, `AgentContext`, `GammaVeto`, `FactorRegistry`, `TokenCostTracker`, `MetricRegistry` и YAML-конфигурацию в end-to-end выбор действия.
 
 ---
 
-*Обновлено: 2026-07-09*
+*Обновлено: 2026-07-11*
