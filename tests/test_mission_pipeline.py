@@ -127,5 +127,24 @@ class TestExecutionContext:
         assert ctx.errors[0] == "Test error"
 
 
+def test_execute_best_ranks_compliant_actions():
+    """Test candidate actions are vetoed before utility ranking."""
+    mission = create_mission(name="Test Mission")
+    processor = MissionProcessor()
+    processor.setup_mission(mission)
+    processor.add_compliance_rule(BlockedActionsRule(blocked_names=["blocked"]))
+
+    ctx = processor.execute_best([
+        Action(name="expensive", resource_cost=30.0),
+        Action(name="cheap", resource_cost=1.0),
+        Action(name="blocked", resource_cost=0.0),
+    ])
+
+    assert ctx.selected_action.name == "cheap"
+    assert ctx.stage_results[PipelineStage.UTILITY]["optimization"] == "risk_adjusted"
+    ranked_names = [item["action"] for item in ctx.stage_results[PipelineStage.UTILITY]["ranked_actions"]]
+    assert "blocked" not in ranked_names
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
