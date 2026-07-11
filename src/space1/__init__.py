@@ -4,6 +4,7 @@ Space1 — Autonomous AI Freelancer Agent Framework
 Public API:
 - GammaVeto, Rule, Action (compliance)
 - MetricTracker (metrics)
+- compute_phi (utility)
 
 Reference: DEVELOPMENT_PLAN.md
 """
@@ -18,6 +19,7 @@ from .metrics.tracker import MetricTracker
 
 # Factors Module (x₁-x₁₇)
 from .factors.registry import FactorRegistry, FactorID, create_mvp_registry
+from .utility import compute_phi
 
 __all__ = [
     "GammaVeto",
@@ -27,4 +29,5 @@ __all__ = [
     "FactorRegistry",
     "FactorID",
     "create_mvp_registry",
+    "compute_phi",
 ]
