@@ -10,12 +10,14 @@ Reference: DEVELOPMENT_PLAN.md - G16
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timedelta
 
 from ..compliance.core import GammaVeto, Action, Rule
+from ..metrics.tracker import MetricRegistry
+from ..utility import rank_actions
 
 
 class PipelineStage(Enum):
@@ -151,28 +153,51 @@ class ComplianceStage(BaseStage):
 
 
 class UtilityStage(BaseStage):
-    """
-    Utility Stage — оптимизация выбора действия.
+    """Utility Stage — Phase 2 risk-adjusted action selection."""
     
-    В MVP выбирает первое подходящее действие.
-    Полная реализация (Phase 2) будет использовать FactorRegistry.
-    """
-    
-    def __init__(self):
+    def __init__(self, metric_registry: Optional[MetricRegistry] = None):
         super().__init__(PipelineStage.UTILITY)
+        self.metric_registry = metric_registry or MetricRegistry()
     
     @property
     def name(self) -> str:
         return "Utility Optimization"
     
     def process(self, ctx: ExecutionContext) -> ExecutionContext:
-        """Оптимизировать выбор действия (MVP: pass-through)."""
-        # В MVP просто передаём действие дальше
-        # Phase 2: использовать FactorRegistry для выбора оптимального
-        ctx.stage_results[self.stage] = {
-            "selected": ctx.selected_action.name if ctx.selected_action else None,
-            "optimization": "none",  # MVP
-        }
+        """Rank compliant candidates and select the highest risk-adjusted utility."""
+        task = ctx.metadata.get("task")
+        agent_context = ctx.metadata.get("agent_context")
+        candidates = ctx.metadata.get("candidate_actions") or (
+            [ctx.selected_action] if ctx.selected_action is not None else []
+        )
+
+        if task is None or agent_context is None or not candidates:
+            ctx.stage_results[self.stage] = {
+                "selected": ctx.selected_action.name if ctx.selected_action else None,
+                "optimization": "pass_through",
+            }
+            return ctx
+
+        scores = rank_actions(
+            task,
+            agent_context,
+            candidates,
+            token_tracker=ctx.metadata.get("token_tracker"),
+            metric_registry=self.metric_registry,
+        )
+        if scores:
+            best = scores[0]
+            ctx.selected_action = best.action
+            ctx.stage_results[self.stage] = {
+                "selected": best.action.name,
+                "optimization": "risk_adjusted_utility",
+                "score": best.score,
+                "phi": best.phi,
+                "psi": best.psi,
+                "quality": best.quality,
+                "upsilon": best.upsilon,
+                "ranked_actions": [(score.action.name, score.score) for score in scores],
+            }
         return ctx
 
 
@@ -278,6 +303,57 @@ class MissionProcessor:
         
         return ctx
     
+
+    def execute_decision(
+        self,
+        task: Any,
+        agent_context: Any,
+        candidate_actions: List[Action],
+        context: Optional[Dict[str, Any]] = None,
+    ) -> ExecutionContext:
+        """Choose the best compliant action for Task + AgentContext candidates."""
+        if self._mission is None:
+            raise ValueError("Mission not set. Call setup_mission() first.")
+
+        ctx = ExecutionContext(mission=self._mission, metadata=context or {})
+        mission_stage = self._stages[0]
+        compliance_stage = self._stages[1]
+        utility_stage = self._stages[2]
+        execution_stage = self._stages[3]
+
+        ctx = mission_stage.process(ctx)
+        agent_context.mission_params = ctx.calibrated_params
+
+        compliant_actions = []
+        compliance_details = {}
+        for action in candidate_actions:
+            passed = compliance_stage._veto.evaluate(action)
+            details = compliance_stage._veto.evaluate_with_details(action)
+            compliance_details[action.name] = details
+            if passed:
+                compliant_actions.append(action)
+
+        ctx.stage_results[PipelineStage.COMPLIANCE] = {
+            "passed": bool(compliant_actions),
+            "details": compliance_details,
+            "compliant_actions": [action.name for action in compliant_actions],
+        }
+        if not compliant_actions:
+            ctx.errors.append("No compliant actions available for utility selection")
+            return ctx
+
+        ctx.selected_action = compliant_actions[0]
+        ctx.metadata.update(
+            {
+                "task": task,
+                "agent_context": agent_context,
+                "candidate_actions": compliant_actions,
+            }
+        )
+        ctx = utility_stage.process(ctx)
+        ctx = execution_stage.process(ctx)
+        return ctx
+
     def get_pipeline_status(self) -> List[Dict[str, str]]:
         """Get status of all pipeline stages."""
         return [

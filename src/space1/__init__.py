@@ -19,7 +19,7 @@ from .metrics.tracker import MetricTracker
 
 # Factors Module (x₁-x₁₇)
 from .factors.registry import FactorRegistry, FactorID, create_mvp_registry
-from .utility import compute_phi
+from .utility import compute_phi, compute_psi, compute_quality, compute_upsilon, rank_actions
 
 __all__ = [
     "GammaVeto",
@@ -30,4 +30,8 @@ __all__ = [
     "FactorID",
     "create_mvp_registry",
     "compute_phi",
+    "compute_psi",
+    "compute_quality",
+    "compute_upsilon",
+    "rank_actions",
 ]

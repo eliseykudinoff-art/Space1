@@ -5,16 +5,17 @@ Reference: DEVELOPMENT_PLAN.md - G16
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from space1.mission import (
-    Mission,
     ExecutionContext,
     MissionProcessor,
     PipelineStage,
     create_mission,
 )
-from space1.compliance.core import GammaVeto, Action, Rule, MaxCostRule, BlockedActionsRule
+from space1.compliance.core import Action, BlockedActionsRule
+from space1.models.agents import AgentContext, create_agent
+from space1.models.task import Task
 
 
 class TestMission:
@@ -129,3 +130,25 @@ class TestExecutionContext:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_execute_decision_selects_best_compliant_candidate():
+    mission = create_mission(name="Decision Mission", max_budget=100.0)
+    processor = MissionProcessor()
+    processor.setup_mission(mission)
+    processor.add_compliance_rule(BlockedActionsRule(blocked_names=["blocked"]))
+
+    agent_context = AgentContext(agent=create_agent("mission-agent"), available_budget=100.0)
+    task = Task(id="mission-task", title="Mission decision", estimated_hours=2.0)
+    actions = [
+        Action(name="low", params={"revenue": 10.0, "cost": 1.0}),
+        Action(name="blocked", params={"revenue": 1000.0, "cost": 1.0}),
+        Action(name="high", params={"revenue": 100.0, "cost": 1.0}),
+    ]
+
+    ctx = processor.execute_decision(task, agent_context, actions)
+
+    assert ctx.selected_action.name == "high"
+    assert ctx.stage_results[PipelineStage.COMPLIANCE]["compliant_actions"] == ["low", "high"]
+    assert ctx.stage_results[PipelineStage.UTILITY]["optimization"] == "risk_adjusted_utility"
+    assert ctx.execution_result["status"] == "executed"
