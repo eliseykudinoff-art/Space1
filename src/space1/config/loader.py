@@ -5,7 +5,10 @@ Config Loader — Загрузка конфигурации из YAML файло
 """
 
 import os
-import yaml
+try:
+    import yaml
+except ModuleNotFoundError:  # pragma: no cover - exercised when PyYAML is unavailable
+    yaml = None
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
@@ -231,13 +234,87 @@ def _dict_to_dataclass(data: Dict, cls):
     return data
 
 
+def _parse_scalar(value: str):
+    value = value.strip()
+    if not value:
+        return {}
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1]
+    if value.startswith("'") and value.endswith("'"):
+        return value[1:-1]
+    if value.startswith("[") and value.endswith("]"):
+        inner = value[1:-1].strip()
+        if not inner:
+            return []
+        return [_parse_scalar(part.strip()) for part in inner.split(",")]
+    if value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            return value
+
+
+def _safe_load_config(path: Path) -> Dict[str, Any]:
+    with open(path) as f:
+        if yaml is not None:
+            return yaml.safe_load(f) or {}
+        return _simple_yaml_load(f.read())
+
+
+def _simple_yaml_load(text: str) -> Dict[str, Any]:
+    root: Dict[str, Any] = {}
+    # entries are (indent, container, parent_container, key_in_parent)
+    stack = [(-1, root, None, None)]
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        content = raw_line.split("#", 1)[0].rstrip()
+        if not content.strip():
+            continue
+        indent = len(content) - len(content.lstrip(" "))
+        stripped = content.strip()
+
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+
+        if stripped.startswith("- "):
+            value = _parse_scalar(stripped[2:].strip())
+            current_indent, current, parent, parent_key = stack[-1]
+            if not isinstance(current, list):
+                replacement = []
+                if isinstance(parent, dict) and parent_key is not None:
+                    parent[parent_key] = replacement
+                    stack[-1] = (current_indent, replacement, parent, parent_key)
+                    current = replacement
+                else:
+                    continue
+            current.append(value)
+            continue
+
+        key, sep, value = stripped.partition(":")
+        if not sep:
+            continue
+
+        parent = stack[-1][1]
+        if not isinstance(parent, dict):
+            continue
+
+        parsed = _parse_scalar(value)
+        parent[key] = parsed
+        if isinstance(parsed, dict):
+            stack.append((indent, parsed, parent, key))
+    return root
+
 def load_constants(path: Optional[Path] = None) -> ConstantsConfig:
     if path is None:
         path = CONFIG_DIR / "constants.yaml"
     if not path.exists():
         return ConstantsConfig()
-    with open(path) as f:
-        data = yaml.safe_load(f)
+    data = _safe_load_config(path)
     return _dict_to_dataclass(data, ConstantsConfig)
 
 
@@ -246,8 +323,7 @@ def load_weights(path: Optional[Path] = None) -> WeightsConfig:
         path = CONFIG_DIR / "weights.yaml"
     if not path.exists():
         return WeightsConfig()
-    with open(path) as f:
-        data = yaml.safe_load(f)
+    data = _safe_load_config(path)
     return _dict_to_dataclass(data, WeightsConfig)
 
 
@@ -256,8 +332,7 @@ def load_rules(path: Optional[Path] = None) -> RulesConfig:
         path = CONFIG_DIR / "rules.yaml"
     if not path.exists():
         return RulesConfig()
-    with open(path) as f:
-        data = yaml.safe_load(f)
+    data = _safe_load_config(path)
     return _dict_to_dataclass(data, RulesConfig)
 
 
@@ -266,8 +341,7 @@ def load_prices(path: Optional[Path] = None) -> PricesConfig:
         path = CONFIG_DIR / "prices.yaml"
     if not path.exists():
         return PricesConfig()
-    with open(path) as f:
-        data = yaml.safe_load(f)
+    data = _safe_load_config(path)
     for provider in ["openai", "anthropic", "ollama"]:
         if provider in data:
             data[provider] = {
