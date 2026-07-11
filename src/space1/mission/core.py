@@ -16,6 +16,8 @@ from enum import Enum
 from datetime import datetime, timedelta
 
 from ..compliance.core import GammaVeto, Action, Rule
+from ..metrics.tracker import MetricRegistry
+from ..utility import rank_actions, score_action
 
 
 class PipelineStage(Enum):
@@ -151,27 +153,39 @@ class ComplianceStage(BaseStage):
 
 
 class UtilityStage(BaseStage):
-    """
-    Utility Stage — оптимизация выбора действия.
+    """Utility Stage — risk-adjusted action scoring for the Phase 2 loop."""
     
-    В MVP выбирает первое подходящее действие.
-    Полная реализация (Phase 2) будет использовать FactorRegistry.
-    """
-    
-    def __init__(self):
+    def __init__(self, metrics: Optional[MetricRegistry] = None):
         super().__init__(PipelineStage.UTILITY)
+        self.metrics = metrics or MetricRegistry()
     
     @property
     def name(self) -> str:
         return "Utility Optimization"
     
     def process(self, ctx: ExecutionContext) -> ExecutionContext:
-        """Оптимизировать выбор действия (MVP: pass-through)."""
-        # В MVP просто передаём действие дальше
-        # Phase 2: использовать FactorRegistry для выбора оптимального
+        """Score the selected compliant action and persist utility metrics."""
+        if ctx.selected_action is None:
+            ctx.stage_results[self.stage] = {"selected": None, "optimization": "risk_adjusted"}
+            return ctx
+
+        decision = score_action(
+            ctx.selected_action,
+            task=ctx.metadata.get("task"),
+            agent_context=ctx.metadata.get("agent_context"),
+            token_tracker=ctx.metadata.get("token_tracker"),
+            metrics=self.metrics,
+        )
         ctx.stage_results[self.stage] = {
-            "selected": ctx.selected_action.name if ctx.selected_action else None,
-            "optimization": "none",  # MVP
+            "selected": ctx.selected_action.name,
+            "optimization": "risk_adjusted",
+            "score": decision.score,
+            "phi": decision.phi,
+            "psi": decision.psi,
+            "quality": decision.quality,
+            "upsilon": decision.upsilon,
+            "omega": decision.omega,
+            "factors": {k: v.value for k, v in decision.factors.items()},
         }
         return ctx
 
@@ -226,10 +240,11 @@ class MissionProcessor:
     """
     
     def __init__(self):
+        self.metrics = MetricRegistry()
         self._stages: List[BaseStage] = [
             MissionStage(),
             ComplianceStage(),
-            UtilityStage(),
+            UtilityStage(self.metrics),
             ExecutionStage(),
         ]
         self._mission: Optional[Mission] = None
@@ -276,6 +291,31 @@ class MissionProcessor:
                     # Phase 6: graded compliance allows partial execution
                     pass
         
+        return ctx
+
+    def execute_best(self, actions: List[Action], context: Optional[Dict[str, Any]] = None) -> ExecutionContext:
+        """Veto non-compliant candidates, rank survivors by utility, then execute the best action."""
+        if self._mission is None:
+            raise ValueError("Mission not set. Call setup_mission() first.")
+        context = context or {}
+        compliant = [action for action in actions if self._compliance is None or self._compliance._veto.evaluate(action)]
+        if not compliant:
+            ctx = ExecutionContext(mission=self._mission, metadata=context)
+            ctx.errors.append("No compliant actions available")
+            ctx.stage_results[PipelineStage.COMPLIANCE] = {"passed": False, "compliant_actions": []}
+            return ctx
+        ranked = rank_actions(
+            compliant,
+            task=context.get("task"),
+            agent_context=context.get("agent_context"),
+            token_tracker=context.get("token_tracker"),
+            metrics=self.metrics,
+        )
+        context = {**context, "ranked_actions": ranked}
+        ctx = self.execute(ranked[0].action, context)
+        ctx.stage_results[PipelineStage.UTILITY]["ranked_actions"] = [
+            {"action": d.action.name, "score": d.score} for d in ranked
+        ]
         return ctx
     
     def get_pipeline_status(self) -> List[Dict[str, str]]:
