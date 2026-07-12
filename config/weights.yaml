@@ -1,94 +1,52 @@
-# Space1 — Factor Weights
-# Веса факторов способностей и коэффициенты
-# Эти значения ОПТИМИЗИРУЮТСЯ байесовскими методами
+# Space1 Weights Configuration
+# All configurable weights for utility calculations
 
-# =============================================================================
-# LLM FACTOR (x1) — Capability
-# =============================================================================
 llm:
-  quality_weight: 0.25   # α_Q — вес качества LLM
-  reasoning_weight: 0.30  # α_R — вес reasoning
-  coding_weight: 0.25     # α_C — вес coding
-  agentic_weight: 0.20     # α_A — вес agentic
-  # Success rate sigmoid parameters
-  lambda_t: 5.0   # λ_t — steepness
-  tau_t: 0.5       # τ_t — threshold
+  quality_weight: 0.25
+  reasoning_weight: 0.30
+  coding_weight: 0.25
+  agentic_weight: 0.20
+  lambda_t: 5.0
+  tau_t: 0.5
 
-# =============================================================================
-# COST TIERING (x8)
-# =============================================================================
 cost_tiering:
-  # Пороги выбора tier
-  low_budget_threshold: 1.0    # <$1 → ollama
-  medium_budget_threshold: 10.0  # $1-10 → free_api
-  # >$10 → paid_api
+  low_budget_threshold: 1.0
+  medium_budget_threshold: 10.0
 
-# =============================================================================
-# GUARDRAILS (x12)
-# =============================================================================
 guardrails:
-  base_beta: 0.05  # β_g — базовый benefit к success
+  base_beta: 0.05
 
-# =============================================================================
-# CONTINUAL LEARNING (x16)
-# =============================================================================
 continual_learning:
-  learning_rate: 0.01    # η_learn
-  knowledge_decay: 0.05  # λ_decay
-  gamma_cl: 0.12         # γ_cl — коэффициент влияния
+  learning_rate: 0.01
+  knowledge_decay: 0.05
+  gamma_cl: 0.12
 
-# =============================================================================
-# QUALITY FUNCTION — Q
-# =============================================================================
 quality:
-  completeness_weight: 0.25  # α
-  accuracy_weight: 0.25        # β
-  fullness_weight: 0.25        # γ
-  timeliness_weight: 0.25      # δ
+  completeness_weight: 0.25
+  accuracy_weight: 0.25
+  fullness_weight: 0.25
+  timeliness_weight: 0.25
 
-# =============================================================================
-# REPUTATION FUNCTION — Υ
-# =============================================================================
 reputation:
-  rating_weight: 0.30          # γ_1
-  retention_weight: 0.25        # γ_2
-  positive_ratio_weight: 0.20   # γ_3
-  delay_weight: 0.15            # γ_4
-  momentum_weight: 0.10         # γ_5
+  rating_weight: 0.30
+  retention_weight: 0.25
+  positive_ratio_weight: 0.20
+  delay_weight: 0.15
+  momentum_weight: 0.10
+  prior_strength: 7
+  prior_mean: 4.2
 
-  # Bayesian prior
-  prior_strength: 7            # m — сила prior
-  prior_mean: 4.2             # μ_0 — mean prior
-
-# =============================================================================
-# UTILITY FUNCTION — U
-# =============================================================================
 utility:
-  profit_weight: 0.30      # λ_Φ
-  reputation_weight: 0.25  # λ_Υ
-  evolution_weight: 0.20   # λ_Ω
-  quality_weight: 0.25      # λ_Q
+  profit_weight: 0.30
+  reputation_weight: 0.25
+  evolution_weight: 0.20
+  quality_weight: 0.25
 
-# =============================================================================
-# RISK FUNCTION — Ψ
-# =============================================================================
 risk:
-  uncertainty_coef: 0.3    # α_u
-  fatigue_coef: 0.2         # α_f
-  novelty_coef: 0.2         # α_n
-  deadline_coef: 0.3         # α_d
-  skill_coef: 0.1           # α_s
+  uncertainty_coef: 0.3
+  fatigue_coef: 0.2
+  novelty_coef: 0.2
+  deadline_coef: 0.3
+  skill_coef: 0.1
 
-# =============================================================================
-# SYNERGIES BETWEEN FACTORS
-# =============================================================================
-synergies:
-  # Δγ_ij — дополнительный выигрыш от комбинации факторов
-  x1_x7: 0.08      # LLM + Prompt
-  x2_x9: 0.12      # Tool + Grounding
-  x5_x6: 0.15      # Multi-agent + Self-correction
-  x6_x14: 0.15     # Self-correction + Patterns
-  x4_x16: 0.10     # Memory + Learning
-  x2_x12: 0.08     # Tool + Guardrails
-  x1_x13: 0.12     # LLM + Reasoning
-  x17_x8: 0.06     # Inference + Cost
+synergies: {}
