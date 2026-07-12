@@ -1,88 +1,62 @@
-# Space1 — Model Prices
-# Цены на LLM модели за 1M токенов (input, output)
-# Обновлять по мере изменения цен на API
+# Space1 Prices Configuration
+# Token and tool pricing
 
-# =============================================================================
-# OPENAI
-# =============================================================================
 openai:
   gpt-4o:
-    input: 5.0      # $5.00 / 1M
-    output: 15.0     # $15.00 / 1M
+    input: 5.0
+    output: 15.0
     context_window: 128000
-    description: "Latest GPT-4o"
-  
+    description: "GPT-4o"
   gpt-4o-mini:
-    input: 0.15     # $0.15 / 1M
-    output: 0.60     # $0.60 / 1M
+    input: 0.15
+    output: 0.60
     context_window: 128000
-    description: "Fast and cheap"
-  
+    description: "GPT-4o Mini"
   gpt-4-turbo:
     input: 10.0
     output: 30.0
     context_window: 128000
     description: "GPT-4 Turbo"
-  
   gpt-3.5-turbo:
     input: 0.5
     output: 1.5
     context_window: 16385
-    description: "Legacy cheap model"
+    description: "GPT-3.5 Turbo"
 
-# =============================================================================
-# ANTHROPIC
-# =============================================================================
 anthropic:
   claude-3-5-sonnet:
     input: 3.0
     output: 15.0
     context_window: 200000
-    description: "Latest Claude Sonnet"
-  
+    description: "Claude 3.5 Sonnet"
   claude-3-opus:
     input: 15.0
     output: 75.0
     context_window: 200000
-    description: "Most capable"
-  
+    description: "Claude 3 Opus"
   claude-3-haiku:
     input: 0.25
     output: 1.25
     context_window: 200000
-    description: "Fast and cheap"
+    description: "Claude 3 Haiku"
 
-# =============================================================================
-# OLLAMA / LOCAL (free)
-# =============================================================================
 ollama:
   llama3:
     input: 0.0
     output: 0.0
     context_window: 8192
-    description: "Meta Llama 3"
-  
-  llama3.1:
-    input: 0.0
-    output: 0.0
-    context_window: 128000
-    description: "Meta Llama 3.1"
-  
+    description: "Llama 3 (local)"
   mistral:
     input: 0.0
     output: 0.0
     context_window: 8192
-    description: "Mistral AI"
-  
+    description: "Mistral (local)"
   codellama:
     input: 0.0
     output: 0.0
     context_window: 16384
-    description: "Code specialized"
+    description: "CodeLlama (local)"
 
-# =============================================================================
-# TOOL COSTS (per call)
-# =============================================================================
 tools:
   browser: 0.01
   file_read: 0.001
@@ -91,23 +65,13 @@ tools:
   code_execution: 0.02
   api_call: 0.001
 
-# =============================================================================
-# TIER SELECTION THRESHOLDS
-# =============================================================================
 tiers:
-  # Based on budget ($)
   free:
     max_budget: 1.0
-    models: ["ollama/*"]
-  
-  budget:
+    models: ["ollama", "free_api"]
+  standard:
     max_budget: 10.0
-    models: ["ollama/*", "openai/gpt-3.5-turbo"]
-  
+    models: ["gpt-4o-mini", "claude-3-haiku"]
   premium:
-    max_budget: 100.0
-    models: ["openai/gpt-4o-mini", "anthropic/claude-3-haiku"]
-  
-  enterprise:
     max_budget: 999999.0
-    models: ["openai/gpt-4o", "anthropic/claude-3-5-sonnet"]
+    models: ["gpt-4o", "claude-3-5-sonnet", "claude-3-opus"]

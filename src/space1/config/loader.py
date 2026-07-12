@@ -33,6 +33,18 @@ class ConstantsConfig:
     homeostasis_target: float = 1.0
     rating_min: float = 1.0
     rating_max: float = 5.0
+    # Phase 2 additions
+    phi_cap: float = 1000.0  # Cap for normalized phi
+    psi_max: float = 1.0
+    upsilon_cap: float = 1.0
+    upsilon_decay: float = 0.95  # EMA decay factor for reputation
+    pid_kp: float = 1.0
+    pid_ki: float = 0.1
+    pid_kd: float = 0.05
+    xi_alpha: float = 0.7
+    xi_beta: float = 0.3
+    phi_r_lambda_psi: float = 0.5
+    phi_r_alpha_rep: float = 0.3
 
 
 @dataclass

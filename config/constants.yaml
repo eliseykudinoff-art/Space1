@@ -1,37 +1,30 @@
-# Space1 — System Constants
-# Базовые константы модели
-# Эти значения НЕ оптимизируются напрямую
+# Space1 Constants Configuration
+# All numerical constants for the framework
 
-# Success Rate
-success_rate_base: 0.3  # S_0 — базовый success rate
+success_rate_base: 0.3
+throughput_base: 1.0
+cost_base: 0.0
+time_base: 1.0
+price_per_task: 50.0
+learning_rate: 0.01
+knowledge_max: 1.0
+initial_knowledge: 0.0
+skill_max: 1.0
+initial_skill: 0.0
+ema_default_alpha: 0.2
+homeostasis_target: 1.0
+rating_min: 1.0
+rating_max: 5.0
 
-# Throughput
-throughput_base: 1.0  # Q_0 — задач/час
-
-# Cost
-cost_base: 0.0  # C_0 — базовый cost ($/задача)
-
-# Time
-time_base: 1.0  # T_0 — час/задача
-
-# Price
-price_per_task: 50.0  # P — цена за задачу ($)
-
-# Learning
-learning_rate: 0.01  # η — скорость обучения
-knowledge_max: 1.0  # K_max — максимальное knowledge
-initial_knowledge: 0.0  # K_0
-
-# Skill
-skill_max: 1.0  # L_max
-initial_skill: 0.0  # L_0
-
-# EMA smoothing
-ema_default_alpha: 0.2  # α для EMA smoothing
-
-# Гомеостаз
-homeostasis_target: 1.0  # Γ_target — целевой гомеостазис
-
-# Rating
-rating_min: 1.0  # R_min
-rating_max: 5.0  # R_max
+# Phase 2 additions
+phi_cap: 1000.0          # Cap for normalized phi
+psi_max: 1.0             # Maximum risk
+upsilon_cap: 1.0         # Soft cap for reputation
+upsilon_decay: 0.95      # EMA decay factor for reputation
+pid_kp: 1.0              # PID proportional gain
+pid_ki: 0.1              # PID integral gain
+pid_kd: 0.05             # PID derivative gain
+xi_alpha: 0.7            # Ξ quality weight
+xi_beta: 0.3             # Ξ opportunity weight
+phi_r_lambda_psi: 0.5    # Φ_R risk penalty weight
+phi_r_alpha_rep: 0.3     # Φ_R reputation amplification
