@@ -19,20 +19,61 @@ from .metrics.tracker import MetricTracker
 
 # Factors Module (x₁-x₁₇)
 from .factors.registry import FactorRegistry, FactorID, create_mvp_registry
-from .utility import compute_phi, compute_psi, compute_quality, update_upsilon, rank_actions, score_action
+
+# Utility Module (Φ, Ψ, Υ, Q, Ω)
+from .utility import (
+    compute_phi,
+    compute_psi,
+    compute_quality,
+    update_upsilon,
+    rank_actions,
+    score_action,
+)
+
+# Control Module (PID, Homeostasis)
+from .utility.control import PIDController, HomeostaticRegulator
+
+# Profit Module (Risk-adjusted Φ)
+from .utility.profit import RiskAdjustedProfit, compute_phi_risk_adjusted
+
+# Reputation Module (Soft-capped Υ)
+from .utility.reputation import SoftCappedReputation
+
+# Composite Module (Ξ coefficients, Φ_R)
+from .utility.composite import XiCoefficients, PhiRCalculator
+
+# Factor Aggregator
+from .utility.factor_aggregator import FactorCalculator
 
 __all__ = [
+    # Compliance
     "GammaVeto",
-    "Rule", 
+    "Rule",
     "Action",
+    # Metrics
     "MetricTracker",
+    # Factors
     "FactorRegistry",
     "FactorID",
     "create_mvp_registry",
+    # Utility Core
     "compute_phi",
     "compute_psi",
     "compute_quality",
     "update_upsilon",
     "rank_actions",
     "score_action",
+    # Control
+    "PIDController",
+    "HomeostaticRegulator",
+    # Profit
+    "RiskAdjustedProfit",
+    "compute_phi_risk_adjusted",
+    # Reputation
+    "SoftCappedReputation",
+    # Composite
+    "XiCoefficients",
+    "PhiRCalculator",
+    # Factors
+    "FactorCalculator",
 ]
