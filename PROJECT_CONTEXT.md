@@ -20,21 +20,20 @@
 
 ```
 ОСНОВНОЙ ИСТОЧНИК (читать первым):
-├── MATHEMATICAL_ANALYSIS.md     ← Описание Manus/Space1
+├── deep-research-report (2).md     ← Описание концепции
+├── deep-research-report (3).md     ← Оставшиеся пробелы в концепции
 └── AGENT_CONTROL_ARCHITECTURE.md ← Архитектура функций управления
 
 МАТЕМАТИКА (для Phase 2+):
 ├── MATHEMATICAL_FORMULAS.md     ← Все формулы (Φ, Q, Ψ, Υ, Γ, Ω)
 └── CYBERNETICS_HOMEOSTASIS_FORMULAS.md ← Кибернетика, PID, гомеостаз
 
-ПОБОЧНЫЕ (НЕ первоисточники, искажают восприятие):
-├── FREELANCER_AGENT_ARCHITECTURE.md  ← Альтернативная версия
-└── COMPARATIVE_ANALYSIS_REPORT.md   ← Сравнение 2 систем с синтезом
+
 ```
 
-### Что такое Space1 ( Manus)
+### Что такое Space1
 
-**Manus → Space1** — AI-агент для фриланс-платформы:
+**Space1** — AI-агент для фриланс-платформы:
 - Максимизирует Φ = (R-C)/T при соблюдении Γ (compliance)
 - Гомеостатическая регуляция: баланс денег, репутации, загрузки
 - Orchestrator: Φ, Γ, Υ, Ψ, Q, Ω, H
