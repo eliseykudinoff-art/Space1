@@ -1,0 +1,491 @@
+
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                      ║
+║              FREELANCE-OPT v3.0 + COGNITIVE-CORE v1.0                               ║
+║         Complete Architecture: From LLM Quality to Market Profitability              ║
+║                                                                                      ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                              TABLE OF CONTENTS
+═══════════════════════════════════════════════════════════════════════════════════════
+
+1.  EXECUTIVE SUMMARY
+2.  SYSTEM OVERVIEW
+3.  LAYER 0: BASE LLM (ULES v2.0)
+4.  LAYER 1: TASK EXECUTION — Program Synthesizer
+5.  LAYER 2: CLIENT CONVERSION — Counterfactual Debugger
+6.  LAYER 3: REPUTATION & RISK — Uncertainty Calibrator
+7.  LAYER 4: PROFIT OPTIMIZATION — Dynamic Pricing
+8.  LAYER 5: MARKET INTELLIGENCE — Opportunity Scorer
+9.  LAYER 6: PORTFOLIO OPTIMIZER — Multi-Platform Bandit
+10. COGNITIVE-CORE: Unified Loop
+11. TACTICS & LORE SYSTEM
+12. MATHEMATICAL APPENDIX
+13. IMPLEMENTATION ROADMAP
+
+═══════════════════════════════════════════════════════════════════════════════════════
+1. EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════════════════════════════════
+
+This document describes a unified architecture for an autonomous freelance agent
+that optimizes for market metrics: profit, win rate, Job Success Score (JSS),
+and long-term reputation. The system integrates six layers:
+
+    ┌─────────────────────────────────────────────────────────────┐
+    │  LAYER 6: Portfolio Optimizer (Thompson Sampling)           │
+    │  LAYER 5: Market Intelligence (EV scoring)                  │
+    │  LAYER 4: Profit Optimization (Dynamic pricing)             │
+    │  LAYER 3: Reputation & Risk (JSS simulator)                │
+    │  LAYER 2: Client Conversion (Proposal optimization)       │
+    │  LAYER 1: Task Execution (Program synthesis + Debug)      │
+    │  LAYER 0: Base LLM (ULES v2.0 with modules)                │
+    └─────────────────────────────────────────────────────────────┘
+
+Key innovation: Every component is measured by its marginal revenue contribution
+(Shapley values), not abstract quality scores. The system learns directly from
+market feedback — every contract outcome updates all layers.
+
+═══════════════════════════════════════════════════════════════════════════════════════
+2. SYSTEM OVERVIEW
+═══════════════════════════════════════════════════════════════════════════════════════
+
+2.1 UNIFIED COGNITIVE LOOP
+─────────────────────────
+
+    SENSE → UNCERTAIN? → SYNTHESIZE → EXECUTE → BUG? → LEARN
+      ↑                                              │
+      └──────────────────────────────────────────────┘
+
+At each iteration:
+    1. SENSE:    Observe environment (job feed, client message, test failure)
+    2. UNCERTAIN: Calibrate confidence using Platt scaling + temporal adaptation
+    3. SYNTHESIZE: Generate plan τ* = argmax U(τ) using beam search
+    4. EXECUTE:  Run plan with checkpoints
+    5. BUG?:     If checkpoint fails, generate hypotheses H, simulate fixes,
+                  select H* = argmax EU(H)
+    6. LEARN:    Update all models (Platt, temporal, synthesis, tactics, lore)
+
+2.2 KEY INTEGRATION FORMULA
+───────────────────────────
+
+    U(τ) = P_synth(τ) · (1 - P_debug(bug|τ)) · p̂_task · V - C(τ) - λ·risk(τ)
+
+Where:
+    P_synth(τ)      = Product of step success probabilities
+    P_debug(bug|τ)  = Expected bug rate from historical data
+    p̂_task          = Calibrated confidence for this task type
+    V               = Contract value
+    C(τ)            = API cost + compute cost + time opportunity cost
+    risk(τ)         = Number of unique side effect types
+
+═══════════════════════════════════════════════════════════════════════════════════════
+3. LAYER 0: BASE LLM (ULES v2.0)
+═══════════════════════════════════════════════════════════════════════════════════════
+
+3.1 COMPOSITE QUALITY SCORE (CQS)
+─────────────────────────────────
+
+    CQS(q) = Σ_{k=1}^7 w_k(q) · score_k(q)
+
+    w_k(q) = exp(z_k^T · φ(q)) / Σ_j exp(z_j^T · φ(q))     [task-adaptive softmax]
+
+Components:
+    k=1: accuracy      (BERTScore + factuality)
+    k=2: relevance     (retrieval precision)
+    k=3: coherence     (discourse structure)
+    k=4: completeness  (coverage of requirements)
+    k=5: safety        (harm avoidance)
+    k=6: latency       (response time)
+    k=7: cost_efficiency (tokens per useful output)
+
+3.2 ENHANCEMENT MODULES
+──────────────────────
+
+    Module          Standalone Gain    Shapley φ    ROI
+    ─────────────────────────────────────────────────────
+    RAG             +15-35%            +18%         59x
+    Chain-of-Thought +20-40%           +19%         12-40x
+    Memory          +10-20%            +14%         45x
+    Safety Filter   +5%                +2%          24x
+    Format Enforcer +8%                +8%          60x
+
+3.3 MARKET-MAPPED QUALITY SCORE (MMQS)
+─────────────────────────────────────
+
+    MMQS(q, m) = Σ_{i∈M} 1_{[m_i∈m]} · ΔP_i^win · V̄_i · γ̄_i
+
+Where ΔP_i^win = P(win|m∪{i}) - P(win|m\{i}) is the marginal win probability
+contribution of module i, measured via A/B testing on real proposals.
+
+═══════════════════════════════════════════════════════════════════════════════════════
+4. LAYER 1: TASK EXECUTION — Program Synthesizer
+═══════════════════════════════════════════════════════════════════════════════════════
+
+4.1 TYPED DSL FOR TOOL COMPOSITION
+───────────────────────────────────
+
+Each primitive is a typed function with Hoare triple: {pre} command {post}
+
+    Primitive(name, input_types, output_type, preconditions, postconditions,
+              cost_api, cost_time, side_effects)
+
+Example primitives:
+    READ_FILE(path: FilePath) → Code
+        pre: file_exists(path), readable(path)
+        post: len(result) > 0
+
+    WRITE_FILE(path: FilePath, content: Code) → Success
+        pre: dir_exists(dirname(path)), len(content) < 10MB
+        post: file_exists(path), read(path) == content
+
+    RUN_COMMAND(cmd: Command) → CommandOutput
+        pre: len(cmd) < 10000, not_contains_dangerous(cmd)
+        post: result.returncode in [0, 1, 2]
+
+4.2 PLAN VALIDATION
+──────────────────
+
+A plan τ = [c_1, c_2, ..., c_k] is valid iff:
+    1. Type checking: output(c_i) compatible with input(c_{i+1})
+    2. Hoare verification: ⊢ {pre_1} τ {post_k}
+    3. Success probability: P(success|τ) = Π_i P(post_i | pre_i, c_i)
+
+4.3 BEAM SEARCH SYNTHESIS
+─────────────────────────
+
+    τ* = argmax_{τ∈T_valid} U(τ)
+
+    U(τ) = P_synth(τ) · (1 - P_debug(bug|τ)) · p̂_task · V - C(τ) - λ·risk(τ)
+
+Beam search with utility-guided pruning:
+    - Expand top-50 partial plans at each depth
+    - Prune plans with P(success) < threshold
+    - Early termination when goal predicate satisfied
+
+4.4 ONLINE LEARNING
+──────────────────
+
+    P(success|c, context)_{t+1} = (α + Σ 1_{[success_i]}·1_{[c_i=c]}) /
+                                  (α + β + Σ 1_{[c_i=c]})
+
+    [Laplace smoothing with α=1, β=1]
+
+═══════════════════════════════════════════════════════════════════════════════════════
+5. LAYER 2: CLIENT CONVERSION — Counterfactual Debugger
+═══════════════════════════════════════════════════════════════════════════════════════
+
+5.1 HYPOTHESIS GENERATION
+────────────────────────
+
+Three sources, ensemble-ranked:
+
+    H = PatternMatch(bug, history) ∪ CausalInfer(bug, trace, G_causal) ∪ LLM(prompt)
+
+    PatternMatch:    Fast, high precision for known bugs
+    CausalInfer:     Medium speed, explains novel bugs via causal graph
+    LLM Abduction:   Slow, catches edge cases
+
+5.2 COUNTERFACTUAL SIMULATION
+────────────────────────────
+
+For each hypothesis H_i:
+    1. Clone system state to sandbox
+    2. Apply fix(H_i) safely
+    3. Run original test suite → must pass
+    4. Run regression suite → must pass
+    5. Measure performance delta
+    6. Compute confidence = score(original, regression, perf, diff)
+    7. Destroy sandbox
+
+5.3 SIDE EFFECT PREDICTION
+─────────────────────────
+
+    Risk(H_i) = Σ_{c∈blast(H_i)} P(fail_c | changed(H_i)) · Impact(c)
+
+    P(fail_c | changed) = historical_co_failure_rate(c, changed_symbols)
+
+5.4 EXPECTED UTILITY OF FIX
+────────────────────────────
+
+    EU(H_i) = P(fix|H_i) · Π_j (1 - P(break_j|H_i)) · V_bug - cost(H_i) - λ·Risk(H_i)
+
+    H* = argmax_{H_i∈H} EU(H_i)
+
+    If EU(H*) < θ_escalate: action = ESCALATE_TO_HUMAN
+
+═══════════════════════════════════════════════════════════════════════════════════════
+6. LAYER 3: REPUTATION & RISK — Uncertainty Calibrator
+═══════════════════════════════════════════════════════════════════════════════════════
+
+6.1 PLATT SCALING
+────────────────
+
+    p̂ = σ(a · conf_raw + b) = 1 / (1 + e^{-(a·conf_raw + b)})
+
+    Learned via MLE on historical (conf_raw, actual_outcome) pairs:
+        L(a,b) = -Σ [y_i log p̂_i + (1-y_i) log(1-p̂_i)]
+
+6.2 TEMPORAL ADAPTATION
+──────────────────────
+
+    p_temp = Σ w_i · y_i / Σ w_i
+
+    w_i = exp(-ln(2) · (t - t_i) / T_{1/2})     [exponential decay]
+
+    If detect_drift(category): retrain Platt model
+
+6.3 DECISION BOUNDARIES
+──────────────────────
+
+    p̂ ≥ θ_accept:     ACCEPT task
+    θ_ask ≤ p̂ < θ_accept: ASK clarifying questions
+    θ_decline ≤ p̂ < θ_ask: DECLINE (suggest alternatives)
+    p̂ < θ_decline:    ESCALATE to human
+
+    Adaptive thresholds:
+        θ_accept' = θ_accept + Δ_high_value·1_{[V>2000]} + Δ_jss·1_{[JSS<0.92]}
+
+6.4 EXPECTED VALUE OF INFORMATION
+────────────────────────────────
+
+    EVI = P(info helps) · ΔV - C_delay
+
+    If EVI > 0 and p̂ ∈ [θ_ask, θ_accept): ask questions
+
+═══════════════════════════════════════════════════════════════════════════════════════
+7. LAYER 4: PROFIT OPTIMIZATION — Dynamic Pricing
+═══════════════════════════════════════════════════════════════════════════════════════
+
+7.1 OPTIMAL BID
+──────────────
+
+    b* = argmax_{b∈[0.5B, 1.5B]} Π(b) = b · P_win(b) · P_success(b) - C(b)
+
+7.2 WIN PROBABILITY (Bradley-Terry)
+────────────────────────────────────
+
+    P_win(b) = 1 / (1 + exp(-(2.0 - 3.0 · b / b̃_median)))
+
+7.3 SUCCESS PROBABILITY (overpricing penalty)
+────────────────────────────────────────────
+
+    P_success(b) = π_0 · (1 - γ · (b/b_fair - 1))
+
+7.4 COST FUNCTION
+────────────────
+
+    C(b) = c_API(m) + c_compute + τ · h(b)
+
+═══════════════════════════════════════════════════════════════════════════════════════
+8. LAYER 5: MARKET INTELLIGENCE — Opportunity Scorer
+═══════════════════════════════════════════════════════════════════════════════════════
+
+8.1 EXPECTED VALUE OF JOB
+────────────────────────
+
+    EV(j) = P(win|j,m) · V_j · φ_j · (1 - ρ_j)
+
+    P(win|j,m) = σ(w^T · Φ(j,m) + u^T · Ψ(market_j))
+
+8.2 FEATURE VECTORS
+──────────────────
+
+    Φ(j,m) = [skill_match, exp_match, JSS_gap, rate_competitiveness, proposal_quality(m)]^T
+
+    Ψ(market_j) = [demand_trend, supply_density, median_bid, client_hire_rate]^T
+
+═══════════════════════════════════════════════════════════════════════════════════════
+9. LAYER 6: PORTFOLIO OPTIMIZER — Multi-Platform Bandit
+═══════════════════════════════════════════════════════════════════════════════════════
+
+9.1 THOMPSON SAMPLING
+────────────────────
+
+    θ_p ~ Beta(α_p, β_p),    p ∈ P = {Upwork, Toptal, Direct, Fiverr}
+
+    θ̂_p^{(t)} ~ Beta(α_p^{(t)}, β_p^{(t)})     [posterior sample]
+
+    a_t = argmax_{p∈P} θ̂_p^{(t)} · E[R_p|win] · c_p^{-1}
+
+9.2 BAYESIAN UPDATE
+──────────────────
+
+    α_p^{(t+1)} = α_p^{(t)} + 1_{[won]}
+    β_p^{(t+1)}  = β_p^{(t)} + 1_{[lost]}
+
+═══════════════════════════════════════════════════════════════════════════════════════
+10. COGNITIVE-CORE: UNIFIED LOOP
+═══════════════════════════════════════════════════════════════════════════════════════
+
+10.1 FULL PIPELINE PSEUDOCODE
+────────────────────────────
+
+    def process_task(task):
+        # 1. SENSE
+        features = extract_features(task)
+
+        # 2. UNCERTAIN?
+        raw_conf = llm.confidence(task.description)
+        p_calibrated = calibrator.calibrate(raw_conf, task.category)
+
+        if p_calibrated < threshold_reject:
+            return Action(DECLINE, reason="confidence too low")
+
+        if p_calibrated < threshold_ask:
+            return Action(CLARIFY, questions=generate_questions(task))
+
+        # 3. SYNTHESIZE
+        candidate_plans = synthesizer.generate(task, n=5)
+        for plan in candidate_plans:
+            plan.utility = (
+                synthesizer.success_probability(plan) *
+                (1 - debugger.expected_bugs(plan)) *
+                p_calibrated * task.value -
+                synthesizer.cost(plan) -
+                lambda_risk * debugger.risk_score(plan)
+            )
+        best_plan = max(candidate_plans, key=lambda p: p.utility)
+
+        # 4. EXECUTE with checkpoints
+        for step in best_plan.steps:
+            result = step.execute()
+            if step.checkpoint and not step.checkpoint.validate(result):
+                # 5. BUG? Counterfactual debug
+                hypotheses = debugger.generate_hypotheses(failure, trace)
+                for H in hypotheses:
+                    H.EU = debugger.simulate(H)
+                best_fix = max(hypotheses, key=lambda h: h.EU)
+                if best_fix.EU < threshold:
+                    return Action(ESCALATE)
+                best_fix.apply()
+
+        # 6. LEARN
+        calibrator.update(task, success=True)
+        synthesizer.update(best_plan, task, success=True)
+        debugger.update(hypotheses, best_fix, success=True)
+
+        return Action(COMPLETE)
+
+═══════════════════════════════════════════════════════════════════════════════════════
+11. TACTICS & LORE SYSTEM
+═══════════════════════════════════════════════════════════════════════════════════════
+
+11.1 THREE-LAYER ARCHITECTURE
+────────────────────────────
+
+    LAYER 3: LORE (slow, conservative learning)
+        Domain Lore:    Technology facts with confidence decay
+        Market Lore:    Client behavior patterns
+        Meta Lore:      Self-identity and boundaries
+
+    LAYER 2: TACTICS (medium, session-adaptive)
+        Negotiation:    Anchor high, bundle value, walk away
+        Escalation:     Early warning, partial delivery
+        Recovery:       Own it fast, overdeliver after fail
+        Speed:          Quick win first, slow down for complex
+
+    LAYER 1: INSTINCTS (hardcoded, immutable)
+        Never:          Share code without permission,
+                        Commit to impossible deadlines,
+                        Disappear without notice
+        Always:         Backup before destructive ops,
+                        Document architecture decisions,
+                        Provide testing evidence
+
+11.2 TACTIC SELECTION
+────────────────────
+
+    EU(tactic_i | situation) = P(success|tactic_i, situation) · V_outcome - C_tactic
+
+    P(success|tactic_i, situation) = (α + Σ 1_{success_j}·1_{similar(s_j,s)}) /
+                                     (α + β + Σ 1_{similar(s_j,s)})
+
+11.3 LORE CONFIDENCE DECAY
+─────────────────────────
+
+    conf_adjusted = conf_raw · (0.5)^{contradictions} · e^{-λ·age}
+
+═══════════════════════════════════════════════════════════════════════════════════════
+12. MATHEMATICAL APPENDIX
+═══════════════════════════════════════════════════════════════════════════════════════
+
+12.1 SHAPLEY VALUE (Revenue Attribution)
+─────────────────────────────────────
+
+    φ_i = Σ_{S⊆M\{i}} |S|!·(|M|-|S|-1)! / |M|! · [R(S∪{i}) - R(S)]
+
+    ROI_i = (φ_i - C_i) / C_i
+
+12.2 AVERAGE TREATMENT EFFECT
+────────────────────────────
+
+    ATT_i = E[R | module i, matched] - E[R | no module i, matched]
+
+    (Propensity score matching for causal inference)
+
+12.3 GLOBAL OBJECTIVE
+────────────────────
+
+    max_{m,b,t,p} E[Σ_{τ=1}^T δ^{τ-1} · (R_τ - C_τ)]
+
+    s.t. JSS_τ ≥ 0.90,  L_τ ≤ L_max,  C_τ ≤ B_τ
+
+12.4 CALIBRATION ERROR
+─────────────────────
+
+    ECE = Σ_{b=1}^B (n_b/N) · |acc(b) - conf(b)|
+
+12.5 TEMPORAL WEIGHTING
+──────────────────────
+
+    w_i = exp(-ln(2) · (t - t_i) / T_{1/2})
+
+═══════════════════════════════════════════════════════════════════════════════════════
+13. IMPLEMENTATION ROADMAP
+═══════════════════════════════════════════════════════════════════════════════════════
+
+PHASE 1 (Weeks 1-2): Foundation
+    □ Deploy ULES v2.0 with RAG + CoT + Memory
+    □ Implement Platt calibrator with 5 categories
+    □ Build basic proposal generator with 3 templates
+    □ Connect to single platform (Upwork)
+
+PHASE 2 (Weeks 3-4): Conversion
+    □ Add Counterfactual Debugger with pattern matching
+    □ Implement Program Synthesizer for code tasks
+    □ Launch A/B testing for proposals
+    □ Add JSS simulator with risk filtering
+
+PHASE 3 (Weeks 5-6): Optimization
+    □ Deploy Dynamic Pricing engine
+    □ Add Multi-Platform Bandit (2 platforms)
+    □ Implement Shapley attribution for modules
+    □ Launch Market Intelligence scraper
+
+PHASE 4 (Weeks 7-8): Intelligence
+    □ Add Tactics & Lore system
+    □ Implement full Cognitive-Core loop
+    □ Deploy online meta-learning
+    □ Add drift detection + auto-retrain
+
+PHASE 5 (Ongoing): Scale
+    □ Expand to 4 platforms
+    □ Add domain-specific LoRA adapters
+    □ Implement multi-agent debate for complex tasks
+    □ Build client relationship graph
+
+═══════════════════════════════════════════════════════════════════════════════════════
+METRICS TARGETS
+═══════════════════════════════════════════════════════════════════════════════════════
+
+    Month 1:  Win rate 15% → 25%,    Revenue $500,   JSS baseline
+    Month 2:  Win rate 25% → 35%,    Revenue $1500,  JSS 90%
+    Month 3:  Win rate 35% → 42%,    Revenue $3200,  JSS 94%
+    Month 6:  Win rate 42% → 50%,    Revenue $5000+, JSS 96%
+
+═══════════════════════════════════════════════════════════════════════════════════════
+
+                            END OF DOCUMENT
+
+═══════════════════════════════════════════════════════════════════════════════════════
