@@ -1,0 +1,51 @@
+resources:
+- connect_via: local
+  host: localhost
+  name: Google Colab (Free)
+  type: gpu_t4
+  vram: 15GB
+- connect_via: API
+  host: kaggle.com
+  name: Kaggle Kernels
+  type: gpu_t4
+  vram: 15GB
+- connect_via: local
+  host: localhost
+  name: GitHub Codespaces (Free)
+  type: cpu
+  vram: 0GB
+- connect_via: local
+  host: localhost
+  name: Google Cloud Shell
+  type: cpu
+  vram: 0GB
+- connect_via: API
+  host: api-inference.huggingface.co
+  name: HuggingFace Spaces (Free)
+  type: cpu
+  vram: 0GB
+- connect_via: P2P
+  host: health.petals.dev
+  name: Petals (Decentralized)
+  type: decentralized
+  vram: 0GB
+- connect_via: SSH
+  host: 0.0.0.0
+  name: SageMaker Studio Lab (Free)
+  type: gpu_t4
+  vram: 16GB
+- connect_via: SSH
+  host: 0.0.0.0
+  name: Oracle Cloud (Free ARM)
+  type: cpu
+  vram: 0GB
+- connect_via: API
+  host: render.com
+  name: Render (Free Tier)
+  type: cpu
+  vram: 0GB
+- connect_via: API
+  host: railway.app
+  name: Railway (Trial)
+  type: cpu
+  vram: 0GB
