@@ -1,0 +1,52 @@
+# Space1 Weights Configuration
+# All configurable weights for utility calculations
+
+llm:
+  quality_weight: 0.25
+  reasoning_weight: 0.30
+  coding_weight: 0.25
+  agentic_weight: 0.20
+  lambda_t: 5.0
+  tau_t: 0.5
+
+cost_tiering:
+  low_budget_threshold: 1.0
+  medium_budget_threshold: 10.0
+
+guardrails:
+  base_beta: 0.05
+
+continual_learning:
+  learning_rate: 0.01
+  knowledge_decay: 0.05
+  gamma_cl: 0.12
+
+quality:
+  completeness_weight: 0.25
+  accuracy_weight: 0.25
+  fullness_weight: 0.25
+  timeliness_weight: 0.25
+
+reputation:
+  rating_weight: 0.30
+  retention_weight: 0.25
+  positive_ratio_weight: 0.20
+  delay_weight: 0.15
+  momentum_weight: 0.10
+  prior_strength: 7
+  prior_mean: 4.2
+
+utility:
+  profit_weight: 0.30
+  reputation_weight: 0.25
+  evolution_weight: 0.20
+  quality_weight: 0.25
+
+risk:
+  uncertainty_coef: 0.3
+  fatigue_coef: 0.2
+  novelty_coef: 0.2
+  deadline_coef: 0.3
+  skill_coef: 0.1
+
+synergies: {}

@@ -1,0 +1,55 @@
+# Space1 Rules Configuration
+# Compliance rules and constraints
+
+financial:
+  max_cost_per_task: 10.0
+  max_total_cost: 1000.0
+  min_balance: 0.0
+
+actions:
+  blocked_actions:
+    - "delete_all"
+    - "drop_database"
+    - "rm_rf"
+    - "sudo"
+  allowed_actions:
+    - "read_file"
+    - "write_file"
+    - "execute_code"
+    - "send_message"
+    - "search_web"
+    - "create_task"
+
+api:
+  rate_limit_per_minute: 60
+  max_retries: 3
+  timeout_seconds: 30
+
+security:
+  blocked_domains:
+    - "evil.com"
+    - "malware.net"
+    - "phishing.example"
+  require_approval_for:
+    - "payment"
+    - "external_api"
+    - "credential_access"
+
+data:
+  max_file_size_mb: 100
+  retention_days: 30
+  allowed_extensions:
+    - ".py"
+    - ".js"
+    - ".md"
+    - ".json"
+    - ".yaml"
+    - ".txt"
+
+parameters:
+  budget_min: 0.0
+  budget_max: 10000.0
+  time_hours_min: 0.1
+  time_hours_max: 168.0
+  priority_min: 0.0
+  priority_max: 1.0

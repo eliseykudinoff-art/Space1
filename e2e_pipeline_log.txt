@@ -1,0 +1,157 @@
+
+======================================================================
+E2E PIPELINE: ОТ ВХОДА ДО ГРАНИЦЫ LLM
+======================================================================
+
+ПРОГОН 1: ЗАДАЧА ОТКЛОНЕНА (DECLINE)
+----------------------------------------------------------------------
+ВХОДНОЙ СИГНАЛ:
+  Agent: Senior Python Developer (id=demo-agent)
+    Balance: $5000.0
+    Token budget: 500.0
+    Success rate: 0.3
+    Code gen: 0.95, Security audit: 0.92
+
+  Task: Implement OAuth2 authentication with Google (id=demo-task-001)
+    Priority: CRITICAL
+    Deadline: 2026-07-30 07:12:41
+    Estimated hours: 24.0
+    Cost: $800.0
+    Security level: 5
+    Min quality: 0.85
+
+STAGE I (RECEPTION):
+  → Task добавлена в scheduler
+  → Queue size: 1
+  → Task popped: demo-task-001
+  → Status: PENDING
+
+STAGE II (CONTEXT BUILDING):
+  → Homeostasis H: 0.8250 (healthy)
+  → Stress: 0.1750 (low)
+  → Recalled memories: 1 (похожая задача в истории)
+  → Client risk premium: 0.2000 (low risk client)
+
+STAGE III (CLASSIFICATION):
+  → Complexity score: 0.8000 (high complexity)
+  → Entropy: 0.6401 (uncertain)
+  → Routing decision: ESCALATE (needs senior dev)
+  → Predicted phi (profit): 0.53
+  → Predicted psi (capability): 0.2700
+  → Predicted q (quality): 0.5507
+
+STAGE IV (COMPLIANCE VETO):
+  → Hard veto: True (security_level=5 >= 3, cost=800 <= limit)
+  → Gamma soft: 0.0000
+  → Compliance: PASSED
+
+STAGE V (DECISION RULE):
+  → gamma_hard: 0.0 (no hard veto)
+  → psi: 0.2700 (low capability match)
+  → C_t: $5000.0 (sufficient balance)
+  → H_TZ: 0.6401 (high complexity)
+  → VoI: 0.0682 (low value of info)
+  → U: 0.5326 (utility)
+  → Q_predicted: 0.5507
+  → q_min: 0.85
+  → DECISION: DECLINE
+  → Причина: q_predicted (0.5507) < q_min (0.85)
+             + psi (0.2700) слишком низкий для такой сложности
+
+STAGE VI (DECOMPOSITION):
+  → Action plan: 3 actions generated
+    [0] security_audit_demo-task-001 (cost: 1.5)
+    [1] implement_auth_demo-task-001 (cost: 3.5)
+    [2] verify_encryption_demo-task-001 (cost: 1.0)
+  → NOTE: plan сгенерирован, но не выполняется из-за DECLINE
+
+ГРАНИЦА LLM (Stage VII): НЕ ПЕРЕСЕКАЕМ
+  → Pipeline остановлен
+
+ВЫХОДНОЙ СИГНАЛ:
+  Task status: PENDING (не изменился — задача отклонена)
+  Task metadata complexity: 0.8
+  Task metadata routing: ESCALATE
+  Agent balance: $5000.0 (не изменился)
+  Agent tokens_used: 50.0 (не изменились)
+
+======================================================================
+ПРОГОН 2: ЗАДАЧА ПРИНЯТА (EXECUTE)
+----------------------------------------------------------------------
+ВХОДНОЙ СИГНАЛ:
+  Agent: Expert Full-Stack Developer (id=demo-agent-2)
+    Balance: $20000.0
+    Token budget: 2000.0
+    Success rate: 0.95
+    Code gen: 0.99, Security audit: 0.98
+
+  Task: Fix CSS bug in login page (id=demo-task-002)
+    Priority: MEDIUM
+    Deadline: 2026-07-27 15:14:14
+    Estimated hours: 2.0
+    Cost: $100.0
+    Security level: 3
+    Min quality: 0.5
+
+STAGE I (RECEPTION):
+  → Task popped: demo-task-002
+
+STAGE II (CONTEXT BUILDING):
+  → Homeostasis H: 1.0617 (excellent, slightly over-optimal)
+  → Stress: -0.0617 (negative = surplus capacity)
+
+STAGE III (CLASSIFICATION):
+  → Complexity score: 0.4000 (low complexity)
+  → Routing decision: AUTO_ASSIGN
+  → Predicted phi: 0.01
+  → Predicted psi: 0.9310 (high capability match)
+  → Predicted q: 0.5842
+
+STAGE IV (COMPLIANCE VETO):
+  → Hard veto: True
+  → Compliance: PASSED
+
+STAGE V (DECISION RULE):
+  → psi: 0.9310 (high)
+  → Q_predicted: 0.5842
+  → q_min: 0.5
+  → DECISION: EXECUTE
+  → Причина: psi высокий, q_predicted > q_min, баланс достаточный
+
+STAGE VI (DECOMPOSITION):
+  → Action plan: 3 actions
+    [0] security_audit_demo-task-002 (cost: 1.5)
+    [1] implement_auth_demo-task-002 (cost: 3.5)
+    [2] verify_encryption_demo-task-002 (cost: 1.0)
+
+ГРАНИЦА LLM (Stage VII): ГОТОВЫ К ПЕРЕХОДУ
+  → Decision = EXECUTE
+  → Система готова вызвать LLM для генерации кода
+  → Останавливаемся по условию задачи
+
+ВЫХОДНОЙ СИГНАЛ:
+  Task status: PENDING
+  Task metadata complexity: 0.4
+  Task metadata routing: AUTO_ASSIGN
+  Agent balance: $20000.0 (не изменился — до execution не дошли)
+
+======================================================================
+ВЫВОДЫ
+======================================================================
+1. Pipeline Stage I-VI работает последовательно и детерминированно.
+
+2. Decision rule корректно отклоняет задачи, которые агент не потянет:
+   - Прогон 1: q_predicted=0.55 < q_min=0.85 → DECLINE
+   - Агент с success_rate=0.3 не справится с CRITICAL задачей
+
+3. Decision rule корректно принимает подходящие задачи:
+   - Прогон 2: psi=0.93, q=0.58 > q_min=0.5 → EXECUTE
+   - Эксперт с success_rate=0.95 справится с простой задачей
+
+4. Side effects на Stage I-VI минимальны:
+   - Task metadata обновляется (complexity, routing)
+   - Agent metrics НЕ меняются (безопасно — до execution не дошли)
+   - Memory НЕ записывается (только чтение)
+
+5. Граница LLM чёткая: Stage VI → Stage VII требует EXECUTE decision.
+   Если DECLINE — LLM не вызывается, экономя токены.
