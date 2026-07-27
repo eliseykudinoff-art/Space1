@@ -1,0 +1,2070 @@
+{
+  "documentation": {
+    "00_MASTER.md": {
+      "functions": [],
+      "formulas": [
+        "\\Upsilon",
+        "\\Gamma_{hard}",
+        "U",
+        "H(0)",
+        "\\Phi_{historical}(0)",
+        "\\Upsilon_k(0)",
+        "n_e=0"
+      ],
+      "invariants": [],
+      "size": 5413
+    },
+    "01_CONCEPT.md": {
+      "functions": [],
+      "formulas": [
+        "\\text{source}(T) \\in \\{\\text{MARKETPLACE},\\ \\text{OWNER\\_DIRECT}\\}",
+        "\\text{next\\_task} = \\begin{cases}\n\\text{текущая задача в работе}, & \\text{urgent(current)} = \\text{True} \\\\\n\\text{ближайшая задача с source=OWNER\\_DIRECT из очереди}, & \\text{иначе, если очередь такая есть} \\\\\n\\text{задача с наивысшим приоритетом по стандартному правилу очереди}, & \\text{иначе}\n\\end{cases}",
+        "\\text{urgent(current)} = \\left(H < H_{clarify}\\right) \\ \\lor\\ \\left(\\text{Ψ}_{updated}(\\text{current}) > \\psi_{max} \\text{ при паузе на срок ожидания}\\right)",
+        "H",
+        "\\Psi_{updated}",
+        "\\Phi_{task}",
+        "P",
+        "\\mathcal D(T)",
+        "P",
+        "P=0",
+        "\\mathcal D(T)",
+        "U",
+        "VoI",
+        "\\mathcal D(T)",
+        "T",
+        "VoI",
+        "\\Gamma_{hard}",
+        "\\psi_{max}, c_{max}",
+        "\\Phi, \\Psi, C_{tokens}",
+        "C_t, B_{comp}"
+      ],
+      "invariants": [],
+      "size": 20978
+    },
+    "02_MATHEMATICAL_CORE.md": {
+      "functions": [
+        "check_gamma_hard",
+        "compute_phi",
+        "compute_learning_rate",
+        "check_gamma_soft",
+        "compute_quality",
+        "compute_omega",
+        "update_phi_historical",
+        "compute_h",
+        "compute_psi",
+        "compute_upsilon_scalar",
+        "update_upsilon",
+        "decide"
+      ],
+      "formulas": [
+        "\\Phi_{task} = \\frac{R_{task} - C_{task}}{T_{task}}, \\qquad [\\",
+        "\n\n**Аксиома A2 (доход с одной задачи):**\n",
+        "P",
+        "), ",
+        "C_{task} = C_0 + C_{ops} + C_{risk} + C_{tokens} + C_{platform} + C_{processing}",
+        "C_{platform} = P\\cdot r_{platform}, \\qquad C_{processing} = (P - C_{platform})\\cdot r_{proc} + f_{proc}",
+        "C_{tokens} = (N_{in}+N_{out})\\cdot P_{token}",
+        "r_{platform}",
+        "r_{proc}, f_{proc}",
+        "C_{tokens}",
+        "800 при комиссии биржи 20% и процессинге ≈2.9%+\\",
+        "179 до учёта риска и стоимости времени. Без этого терма ",
+        "T_{task} = \\max\\left(\\epsilon_T,\\; T_0 \\cdot \\prod_{i=1}^{17} f_{T,i}(x_i)\\right)",
+        "\\epsilon_T",
+        "f_{T,i}(x_i) < 1",
+        "\\Phi_{task} \\to \\infty",
+        "\\text{Throughput}_{portfolio} = \\frac{N_{tasks}(\\Delta t)}{\\Delta t}",
+        "Q",
+        "Q",
+        "Q"
+      ],
+      "invariants": [
+        "**Границы:** $\\Gamma_{hard} \\in \\{0, -\\infty\\}$; $\\Gamma_{soft} \\in [0, \\infty)$, где 0 — отсутствие нарушений.\n\n**Параметры:** веса $w_s$ — Часть V, запись Γ-1 (без внешнего источника, требуют калибр",
+        "**Границы:** $\\Phi_{task} \\in (-\\infty, +\\infty)$ — прибыль может быть отрицательной (убыток), это мягкая граница. (Исправляет ещё одно внутреннее расхождение: `MATHEMATICAL_FORMULAS.md` §10 заявляет ",
+        "**Границы:** $Q \\in [0,1]$ жёстко.\n\n**Параметры:** $\\alpha=\\beta=\\gamma=\\delta=0.25$ — Часть V, запись Q-1 (равные веса — предположение по умолчанию, не калибровка).\n\n---\n\n### IV.4 Ψ — Risk (Риск)\n\n**",
+        "**Границы:** $\\Psi \\in [0,\\infty)$, размерность \\$ — согласуется с порогом $\\psi_{max}$ из Mission (§IV.11), также в \\$ (устраняет потенциальное opасение о размерностной нестыковке — при сверке оба вы",
+        "**Границы:** каждая $\\Upsilon_k \\in [0,1]$; $\\Upsilon_{scalar}\\in[0,1]$.\n\n**Параметры:** Часть V, запись Υ-1 (структурные веса $\\gamma_{1..5}$ не откалиброваны нигде в корпусе — явно помечено).\n\n**Отк",
+        "**Границы:** $\\Omega \\in [0,1]$ (после нормировки компонентов); $\\Delta_{div}\\in[0,\\log_2 K_{types}]$; $\\eta(t)\\in[0.2\\eta_0,\\ \\eta_0]$.\n\n**Параметры:** Часть V, запись Ω-1, Ω-2 (новая: коэффициент ни",
+        "**Границы:** $H \\in (-\\infty, +\\infty)$ в исправленной версии (не ограничена сверху — это соответствует замыслу «агент, стабильно превосходящий цели, должен иметь право заметно расслабиться», прежде ф",
+        "**Границы:** $\\Lambda \\in (0, \\infty)$.\n\n**Параметры:** Часть V, запись Λ-1 (идентичны прежним «H-параметрам» из `MATHEMATICAL_FORMULAS.md` §3.7.2–3.7.3, без изменений, кроме имени).\n\n---\n\n### IV.9 H_",
+        "**Границы:** $H_{TZ}\\in[0,\\log_2 K]$ ($K$ — число категорий классификатора); $VoI\\in(-\\infty,+\\infty)$, размерность \\$/час.\n\n**Параметры:** $H_{max}$ (порог для гейта CLARIFY, §IV.14) — Часть V, запис",
+        "**Границы:** $\\mathcal{A}\\in(0,\\infty)$.\n\n---\n\n### IV.11 U — Utility (Итоговая полезность)\n\n**Каноническая формула:**\n\n$$U_{raw} = \\lambda_\\Phi\\cdot\\hat\\Phi + \\lambda_\\Upsilon\\cdot\\Upsilon_{scalar} + "
+      ],
+      "size": 75962
+    },
+    "03_PIPELINE_MATH.md": {
+      "functions": [
+        "decide_with_pipeline_context",
+        "classify_task",
+        "predict_estimates",
+        "select_executor",
+        "render_status_block",
+        "reflect"
+      ],
+      "formulas": [
+        "c_{t+1} = f_\\theta(c_t, a_t, o_t)",
+        "c_t",
+        "t",
+        "\\mathbf x",
+        "a_t",
+        "o_t",
+        "c_t",
+        "T_{raw}",
+        "\\mathbf x=(x_1,\\ldots,x_{17})",
+        "p_k",
+        "H_{TZ}",
+        "\\mathbf{e} = \\text{Encoder}(T_{raw}) \\in \\mathbb{R}^d, \\qquad \\mathbf{p} = \\text{softmax}(W_{meta}\\cdot\\mathbf e + b_{meta}) \\in \\mathbb{R}^K",
+        "H_{TZ} = -\\sum_{k=1}^K p_k\\log_2 p_k \\qquad \\text{(см. } \\S\\text{IV.9 ядра — формула та же, источник вычисления — здесь)}",
+        "W_{meta}, b_{meta}",
+        "\\mathbf{p}^{(0)} = \\text{prior}(\\mathbf{p}\\mid\\text{industry heuristics}) \\quad\\xrightarrow{\\ n\\ \\text{задач}\\ }\\quad \\mathbf{p}^{(n)} \\propto \\mathbf{p}^{(0)} \\cdot \\prod_{\\tau=1}^n \\mathcal{L}(\\text{outcome}_\\tau \\mid \\text{category}_\\tau)",
+        "\\text{prior}(\\mathbf p)",
+        "\\mathcal L",
+        "\\Upsilon",
+        "W_{meta}, b_{meta}",
+        "H_{TZ}"
+      ],
+      "invariants": [
+        "**Границы:** $H_{TZ}\\in[0,\\log_2 K]$; $\\mathbf x \\in [0,1]^{17}$.\n\n**Параметры:** Часть XIII, записи P-1 (отклонённая нейросетевая версия), P-2 (таблица $g_i$).\n\n---\n\n## Часть II. Этап 2 — Сборка конт",
+        "**Границы:** если для категории $\\mathbf p$ нет вообще никакой статистики (полный холодный старт и по агенту, и по категории — самый первый случай в истории системы) — $v_{ref}$ падает к общерыночным ",
+        "**Границы:** $P_{bid} \\ge P_{min}$ всегда, по построению (если $P_{bid}<P_{min}$ по формуле выше — это сигнал, что либо $r_{base}$ занижен, либо задачу в принципе не стоит предлагать, вне зависимости ",
+        "**Границы:** $n\\ge 1$ (минимум одно атомарное действие — тривиальные задачи не декомпозируются дальше одного шага).\n\n**Отклонённая версия:** не отклонена — семейство формул принято целиком, без альтер",
+        "**Границы:** $\\text{Cohesion},\\text{Coupling}\\in[0,1]$; $\\text{slack}(a_i)\\ge 0$ для выполнимого плана (отрицательный слэк означает, что план физически не укладывается в дедлайн — сигнал вернуться на ",
+        "**Границы:** если $\\text{Candidates}(a_i)=\\emptyset$ (ни один исполнитель не проходит порог доверия и не покрывает требования) — действие не назначается, вся задача возвращается на этап 6 с пометкой «",
+        "**Границы:** $P_{bid} > 0$. **Параметры:** — Часть XIII, запись R-4.\n\n---\n\n## Часть VIII. Этап 8 — Исполнение: вызов инструментов, синтез, верификация\n\n**Вход:** $a_i$, назначенный $e_i$.\n**Выход:** р",
+        "**Границы:** при исчерпании $k_{max}$ попыток без успеха — действие помечается failed, задача уходит на этап 10 (рефлексия) для решения — заменить шаг альтернативным действием, эскалировать клиенту/че",
+        "**Границы:** Verifier не гарантирует $Q_{actual}=1$ — снижает частоту брака, доходящего до клиента, не заменяет измерение реального восприятия.\n\n**Параметры:** пороги 8.5/3/4 — Часть XIII, запись V-1 ",
+        "**Границы:** $\\tau$ (допустимая просадка полезности альтернативы) — Часть XIII, запись R-3. Число RETRY-циклов ограничено сверху $k_{max}(a_i)$ той же формулой, что и в §VIII.2 — не отдельный, несогла"
+      ],
+      "size": 65431
+    },
+    "04_ARCHITECTURE.md": {
+      "functions": [],
+      "formulas": [
+        "\\mathbf x, H_{TZ}",
+        "G_i",
+        "\\Upsilon",
+        "I=w_1\\text{Recency}+w_2\\text{Importance}+w_3\\text{Relevance}",
+        "(s_t,a_t,r_t)",
+        "a_i",
+        "H_{TZ}",
+        " (ядро/пайплайн §VI) — она уже написана как максимизация по всем возможным ",
+        ", просто на практике перебирается один жадно построенный план. Уточнение: при ",
+        " выше порога (тот же порог, что уже используется для CLARIFY, ядро §IV.14) — decomposition строит ",
+        " кандидатов плана и выбирает по той же формуле ",
+        ", не по первому найденному. Не новая формула — уточнение того, как уже существующий "
+      ],
+      "invariants": [],
+      "size": 20999
+    },
+    "05_MEMORY_AND_STATE.md": {
+      "functions": [
+        "derive_strategic_posture",
+        "consolidate_facts",
+        "retrieve_skills",
+        "extract_skill",
+        "compute_priority",
+        "retrieve_episodes",
+        "update_skill_status"
+      ],
+      "formulas": [
+        "A",
+        "C_t",
+        "I",
+        "I",
+        "\\text{Episode} = (T_{raw}, \\mathbf x, \\mathbf p, A, \\text{история попыток}, Q_{actual}, \\Phi_{task}, \\text{триггеры рефлексии})",
+        "I(\\text{episode}, t) = w_1 \\cdot \\text{Recency}(t) + w_2 \\cdot \\text{Importance} + w_3 \\cdot \\text{Relevance}(\\text{query})",
+        "\\text{Recency}(t) = e^{-\\lambda(t - t_{episode})} \\quad\\text{(та же экспоненциальная форма, что }\\Phi_{forget}\\text{, ядро §IV.6 — не новый механизм, переиспользование)}",
+        "\\text{Importance} \\in [0,1] \\quad\\text{— вычисляется в момент записи: } |Q_{actual} - q_{min}|\\ \\text{(чем дальше от ожидаемого — в любую сторону — тем важнее запомнить)}",
+        "\\text{Relevance}(\\text{query}) = \\text{cosine\\_sim}(\\text{embed}(\\text{query}), \\text{embedding})",
+        "w_1,w_2,w_3",
+        "\\text{BM25}(D,Q) = \\sum_{q_i \\in Q} \\text{IDF}(q_i)\\cdot\\frac{f(q_i,D)\\cdot(k_1+1)}{f(q_i,D)+k_1\\cdot(1-b+b\\cdot|D|/\\text{avgdl})}",
+        "\\text{RRF}(d) = \\sum_{m\\in\\{\\text{vector},\\text{BM25}\\}} \\frac{1}{k+r_m(d)}",
+        "\\text{retrieve}(query, k) = \\text{top-}k\\ \\text{по}\\ I(\\text{episode}) \\cdot \\text{RRF}(\\text{episode})",
+        "I \\in [0,1]",
+        "w_1+w_2+w_3=1",
+        "k",
+        "\\text{confidence}_{t+1} = \\begin{cases}\n0.9\\cdot\\text{confidence}_t + 0.1, & \\text{новый эпизод подтверждает факт} \\\\\n0.7\\cdot\\text{confidence}_t,\\quad \\text{contradictions}\\mathrel{+}=1, & \\text{новый эпизод противоречит факту}\n\\end{cases}",
+        "\\text{confidence}_{\\text{effective}} = \\text{confidence}_t \\cdot (0.5)^{\\text{contradictions}} \\cdot e^{-\\lambda\\cdot\\text{age}}",
+        "(0.5)^{\\text{contradictions}}",
+        "e^{-\\lambda\\cdot\\text{age}}"
+      ],
+      "invariants": [
+        "**Границы:** $I \\in [0,1]$ при условии $w_1+w_2+w_3=1$; `retrieve()` всегда возвращает не более $k$ эпизодов (параметр, Часть IX).\n\n---\n\n## Часть IV. Semantic Memory\n\n**Определение:** факты и предпочт",
+        "**Границы:** `confidence_effective` пересчитывается при каждом обращении (не только при записи нового эпизода — временной множитель $e^{-\\lambda\\cdot\\text{age}}$ меняется непрерывно); факт с `confiden",
+        "**Границы:** `success_rate` навыка обновляется по той же экспоненциально-сглаживающей схеме, что $\\Phi_{historical}$ и $\\Upsilon$ (ядро §IV.2, §IV.5) — не отдельный, третий способ сглаживания истории.",
+        "**Границы:** `history` не хранится бесконечно — подлежит тому же затуханию, что Episodic Memory (Часть III.2, `Recency`) при превышении объёма (Часть IX).\n\n---\n\n## Часть VIII. Реестр параметров и пров"
+      ],
+      "size": 27591
+    },
+    "06_EXTERNAL_ENVIRONMENT.md": {
+      "functions": [
+        "escalation_level",
+        "platform_risk_score",
+        "check_platform_hard_rules",
+        "score_opportunity",
+        "score_client_risk",
+        "dispute_protocol_next_step"
+      ],
+      "formulas": [
+        "EV(j) = P(\\text{win}\\mid j, m)\\cdot V_j\\cdot\\phi_j\\cdot(1-\\rho_j)",
+        "j",
+        "m",
+        "V_j",
+        "\\phi_j",
+        "\\rho_j",
+        "\\Psi",
+        "\\Phi(j,m) = [\\text{skill\\_match}, \\text{exp\\_match}, \\text{JSS\\_gap}, \\text{rate\\_competitiveness}, \\text{proposal\\_quality}]^T",
+        "\\Psi(\\text{market}) = [\\text{demand\\_trend}, \\text{supply\\_density}, \\text{median\\_bid}, \\text{client\\_hire\\_rate}]^T",
+        "P(\\text{win}\\mid j,m) = \\sigma(\\mathbf w^T[\\Phi(j,m)\\ \\|\\ \\Psi(\\text{market})])",
+        "EV(j)",
+        "\\mathcal D(T)",
+        "\\mathbf w",
+        "s_k = \\sigma(\\mathbf w_k^T \\phi(\\text{text}) + b_k), \\quad k\\in\\{\\text{scope\\_creep}, \\text{micromanage}, \\text{payment\\_risk}, \\text{unrealistic}, \\text{comm\\_friction}\\}",
+        "CCRS = \\sum_k \\alpha_k\\cdot s_k\\cdot\\beta_{market}\\cdot\\gamma_{category}, \\qquad \\sum_k\\alpha_k=1",
+        "\\text{risk\\_premium}(T)",
+        "CCRS",
+        "<0.3",
+        "0.3\\text{–}0.6",
+        "0.6\\text{–}0.8"
+      ],
+      "invariants": [],
+      "size": 24448
+    },
+    "07_CALIBRATION_AND_VALIDATION.md": {
+      "functions": [
+        "generate_synthetic_task",
+        "validate_against_rli_examples",
+        "calibrate_with_ewc",
+        "sensitivity"
+      ],
+      "formulas": [
+        "\\Psi",
+        "\\Omega",
+        "\\mathbf x",
+        "w_1,w_2,w_3",
+        "T_{synth} \\sim \\mathcal{G}(\\mathbf p_{category}, \\text{CCRS}_{dist}, \\text{сложность}_{dist}, \\text{дедлайн}_{dist})",
+        "\\mathbf x",
+        "H_{TZ}",
+        "\\theta",
+        "S(\\theta) = \\frac{\\partial}{\\partial\\theta}\\mathbb E_{T\\sim\\mathcal G}\\left[U(T)\\right] \\approx \\frac{U(\\theta+\\delta) - U(\\theta-\\delta)}{2\\delta}",
+        "|S(\\theta)|",
+        "|S(\\theta)|\\approx 0",
+        "\\hat Q_{predicted}, \\hat T, \\hat\\Psi",
+        "\\beta_i,\\gamma_{ij}",
+        "v_{llm}",
+        "S(\\theta)",
+        "\\mathbf x",
+        "\\Psi",
+        "\\mathcal D(T)",
+        "\\Omega",
+        "\\Phi_{historical}"
+      ],
+      "invariants": [],
+      "size": 11978
+    },
+    "08_GLOSSARY.md": {
+      "functions": [],
+      "formulas": [
+        "\\Gamma_{hard}",
+        "\\{0,-\\infty\\}",
+        "\\Gamma_{soft}",
+        "[0,\\infty)",
+        "\\Phi_{task}, \\Phi_{historical}",
+        "(-\\infty,\\infty)",
+        "Q",
+        "[0,1]",
+        "\\Psi",
+        "[0,\\infty)",
+        "\\boldsymbol\\Upsilon",
+        "\\Upsilon_{scalar}",
+        "[0,1]",
+        "\\Omega",
+        "[0,1]",
+        "\\Delta_{div}",
+        "[0,\\log_2 K]",
+        "H",
+        "1-\\text{stress}",
+        "(-\\infty,\\infty)"
+      ],
+      "invariants": [],
+      "size": 6706
+    },
+    "09_ECOSYSTEM_AND_INTEROP.md": {
+      "functions": [
+        "acquire_tool",
+        "register_executor",
+        "check_plan_types",
+        "select_subcontractor",
+        "get_candidates"
+      ],
+      "formulas": [
+        "C_{tokens}",
+        "V",
+        "\\text{Trust}(e) = w_{rep}\\cdot\\text{Reputation}(e) + w_{con}\\cdot\\text{ConstraintSatisfaction}(e)",
+        "\\text{Reputation}(e)",
+        "\\Upsilon",
+        "\\text{ConstraintSatisfaction}(e)",
+        "\\text{ToolScore}(tool) = w_1\\cdot\\text{Quality}+w_2\\cdot\\text{Speed}+w_3\\cdot\\text{Reliability}+w_4\\cdot\\text{Compatibility}+w_5\\cdot\\text{Cost}+w_6\\cdot\\text{Coverage}",
+        "\\text{ToolScore}",
+        "\\bar V_e",
+        "EV(j)",
+        "\\Xi(tool, \\text{action}) = \\alpha\\cdot Q_{result} - \\beta\\cdot(O_{time}+O_{cost})",
+        "\\Xi_{task}",
+        "\\bar V_e",
+        "\\Xi",
+        "\\Xi \\in (-\\infty,\\infty)",
+        "\\alpha,\\beta",
+        "\\text{поиск} \\to \\text{оценка} \\to \\text{sandbox} \\to \\text{тестирование} \\to \\text{метрики} \\to \\text{ранжирование} \\to \\text{регистрация}",
+        "\\mathbf x_{a_i} \\not\\preceq \\mathbf x",
+        "\\Xi_{predicted}",
+        "\\Psi"
+      ],
+      "invariants": [
+        "**Границы:** $\\Xi \\in (-\\infty,\\infty)$, коэффициенты $\\alpha,\\beta$ — Часть IX (требуют калибровки, тот же статус, что был в архиве ядра).\n\n---\n\n## Часть III. Tool Acquisition Pipeline\n\n**Источник:**",
+        "**Границы:** type checking — необходимое, не достаточное условие корректности плана (проходит формальную проверку типов, не гарантирует содержательный успех — это по-прежнему роль Verifier).\n\n---\n\n## "
+      ],
+      "size": 19164
+    },
+    "10_SECURITY.md": {
+      "functions": [
+        "compute_initial_confidence",
+        "compute_anomaly_score",
+        "check_global_circuit",
+        "flag_contradiction_for_review",
+        "check_circuit",
+        "render_approval_summary"
+      ],
+      "formulas": [
+        "\\Gamma_{hard}",
+        "\\text{confidence}_{initial}(\\text{fact}) = \\text{confidence}_{base} \\cdot \\text{SourceTrust}(\\text{origin})",
+        "\\text{SourceTrust}",
+        "1.0",
+        "0.9",
+        "0.5",
+        "\\text{confidence}>0.8",
+        "\\mathcal D(T)",
+        "\\text{CircuitState} \\in \\{\\text{CLOSED}, \\text{OPEN}, \\text{HALF\\_OPEN}\\}",
+        "\\text{trip}(\\text{CLOSED}\\to\\text{OPEN}) \\iff \\left(\\frac{\\text{failures}_{\\text{window}}}{\\text{attempts}_{\\text{window}}} > \\theta_{fail}\\right) \\lor \\left(C_{spent,\\text{задача}} > \\kappa\\cdot\\hat C_{predicted}\\right) \\lor \\left(\\text{recursion\\_depth}(\\text{RETRY/ESCALATE}) > d_{max}\\right)",
+        "k_{max}",
+        "\\tau_{cooldown}",
+        "k_{max}",
+        "\\tau_{cooldown}",
+        "\\text{trip}_{\\text{global}} \\iff H(t) < H_{emergency} \\ \\lor\\ \\text{PlatformRiskScore}(t) < \\rho_{emergency} \\ \\lor\\ \\left(\\text{доля задач, дошедших до OPEN за сессию} > \\theta_{global}\\right)",
+        "H",
+        "\\text{PlatformRiskScore}",
+        "\\theta_{fail}, \\kappa, d_{max}, \\tau_{cooldown}, H_{emergency}, \\rho_{emergency}, \\theta_{global}",
+        "\\text{Anomaly}(t) = \\left\\|\\mathbf{b}(t) - \\bar{\\mathbf b}_{\\text{baseline}}\\right\\|_{\\Sigma^{-1}} \\quad\\text{(расстояние Махаланобиса от типового поведенческого профиля)}",
+        "\\mathbf b(t)"
+      ],
+      "invariants": [
+        "**Границы:** глобальный trip — событие, требующее ручного разбора причины перед возобновлением (не автоматический HALF_OPEN, в отличие от уровня отдельной задачи, §III.1) — цена ложного срабатывания ("
+      ],
+      "size": 21326
+    },
+    "ARCHIVE_MANIFEST.md": {
+      "functions": [],
+      "formulas": [],
+      "invariants": [],
+      "size": 5629
+    },
+    "NAMING_CONVENTION.md": {
+      "functions": [
+        "compute_phi"
+      ],
+      "formulas": [],
+      "invariants": [],
+      "size": 3587
+    },
+    "Space1_Documentation_Rewrite_Plan.md": {
+      "functions": [],
+      "formulas": [
+        "50 по умолчанию, \\",
+        "C_{max}",
+        "r_{floor}",
+        "v_{llm}",
+        "P_{success}(b)",
+        "P_{bid}",
+        "\\partial\\text{JSS}/\\partial(\\text{contract})",
+        "\\text{conf}_{adjusted}=\\text{conf}_{raw}\\cdot(0.5)^{\\text{contradictions}}\\cdot e^{-\\lambda\\cdot\\text{age}}",
+        "\\Gamma_{hard}",
+        "EV(j)=P(\\text{win}\\mid j,m)\\times V_j\\times\\phi_j\\times(1-\\rho_j)",
+        "\\Phi(j,m)",
+        "\\Psi(\\text{market})",
+        "\\text{sys\\_H\\_health}",
+        "H",
+        "\\Gamma_{hard}",
+        "U",
+        "U",
+        "\\Gamma_{hard}"
+      ],
+      "invariants": [],
+      "size": 46330
+    },
+    "Space1_Review_and_Roadmap.md": {
+      "functions": [],
+      "formulas": [],
+      "invariants": [],
+      "size": 41822
+    },
+    "исправления_phase4.md": {
+      "functions": [
+        "solution"
+      ],
+      "formulas": [],
+      "invariants": [],
+      "size": 37575
+    }
+  },
+  "code": {
+    "lead_evaluation_execute": [
+      "agents/core.py"
+    ],
+    "task_execution_execute": [
+      "agents/core.py"
+    ],
+    "invoice_processing_execute": [
+      "agents/core.py"
+    ],
+    "budget_enforcement_execute": [
+      "agents/core.py"
+    ],
+    "create_sub_agent_registry": [
+      "agents/core.py"
+    ],
+    "can_handle": [
+      "agents/core.py"
+    ],
+    "register": [
+      "agents/core.py",
+      "compliance/core.py",
+      "compliance/core.py",
+      "delivery/core.py",
+      "factors/registry.py",
+      "triggers/core.py"
+    ],
+    "get": [
+      "agents/core.py",
+      "factors/registry.py",
+      "market_protocols/core.py",
+      "memory/core.py",
+      "metrics/tracker.py",
+      "metrics/tracker.py",
+      "metrics/tracker.py"
+    ],
+    "find_for_action": [
+      "agents/core.py"
+    ],
+    "list_all": [
+      "agents/core.py"
+    ],
+    "dispatch": [
+      "agents/core.py"
+    ],
+    "list_capabilities": [
+      "agents/core.py"
+    ],
+    "execute": [
+      "agents/core.py",
+      "mission/core.py"
+    ],
+    "evaluate_lead": [
+      "agents/core.py"
+    ],
+    "execute_and_assess": [
+      "agents/core.py"
+    ],
+    "process_invoice": [
+      "agents/core.py"
+    ],
+    "run_role_async": [
+      "agents/core.py"
+    ],
+    "enforce_budget_cuts": [
+      "agents/core.py"
+    ],
+    "load_providers": [
+      "ai_super_router/main.py"
+    ],
+    "cmd_health": [
+      "ai_super_router/main.py"
+    ],
+    "cmd_models": [
+      "ai_super_router/main.py"
+    ],
+    "cmd_compute": [
+      "ai_super_router/main.py"
+    ],
+    "cmd_scan": [
+      "ai_super_router/main.py"
+    ],
+    "cmd_chat": [
+      "ai_super_router/main.py"
+    ],
+    "cmd_serve": [
+      "ai_super_router/main.py"
+    ],
+    "cmd_status": [
+      "ai_super_router/main.py"
+    ],
+    "main": [
+      "ai_super_router/main.py"
+    ],
+    "handle_chat_completions": [
+      "ai_super_router/main.py"
+    ],
+    "handle_models": [
+      "ai_super_router/main.py"
+    ],
+    "handle_status": [
+      "ai_super_router/main.py"
+    ],
+    "remaining_hours": [
+      "ai_super_router/compute/aggregator.py"
+    ],
+    "is_session_active": [
+      "ai_super_router/compute/aggregator.py"
+    ],
+    "select_compute": [
+      "ai_super_router/compute/aggregator.py"
+    ],
+    "register_session": [
+      "ai_super_router/compute/aggregator.py"
+    ],
+    "end_session": [
+      "ai_super_router/compute/aggregator.py"
+    ],
+    "get_status_report": [
+      "ai_super_router/compute/aggregator.py",
+      "ai_super_router/core/router.py"
+    ],
+    "reset_weekly_quotas": [
+      "ai_super_router/compute/aggregator.py"
+    ],
+    "classify": [
+      "ai_super_router/core/client.py",
+      "orchestrator/context.py"
+    ],
+    "get_retry_delay": [
+      "ai_super_router/core/client.py",
+      "ai_super_router/core/router.py"
+    ],
+    "validate_response": [
+      "ai_super_router/core/client.py"
+    ],
+    "extract_and_validate": [
+      "ai_super_router/core/client.py"
+    ],
+    "start": [
+      "ai_super_router/core/client.py",
+      "ai_super_router/core/health_checker.py",
+      "ai_super_router/discovery/scanner.py",
+      "models/task.py"
+    ],
+    "stop": [
+      "ai_super_router/core/client.py",
+      "ai_super_router/core/health_checker.py",
+      "ai_super_router/discovery/scanner.py"
+    ],
+    "complete": [
+      "ai_super_router/core/client.py",
+      "models/task.py"
+    ],
+    "complete_stream": [
+      "ai_super_router/core/client.py"
+    ],
+    "get_status": [
+      "ai_super_router/core/client.py"
+    ],
+    "get_models": [
+      "ai_super_router/core/client.py"
+    ],
+    "check_all": [
+      "ai_super_router/core/health_checker.py"
+    ],
+    "check_inference": [
+      "ai_super_router/core/health_checker.py"
+    ],
+    "to_dict": [
+      "ai_super_router/core/router.py",
+      "client_psychometrics/core.py",
+      "cold_start/core.py",
+      "cost/token_tracker.py",
+      "market_protocols/core.py",
+      "memory/storage.py",
+      "metrics/tracker.py",
+      "mission/core.py",
+      "models/agents.py",
+      "models/agents.py",
+      "models/agents.py",
+      "models/agents.py",
+      "models/context.py",
+      "models/context.py",
+      "models/context.py",
+      "models/context.py",
+      "models/task.py",
+      "optimizer/models.py",
+      "utility/composite.py",
+      "utility/composite.py",
+      "utility/factor_aggregator.py",
+      "utility/profit.py",
+      "utility/reputation.py",
+      "utility/reputation.py",
+      "verifier/core.py"
+    ],
+    "get_explanation": [
+      "ai_super_router/core/router.py"
+    ],
+    "can_make_request": [
+      "ai_super_router/core/router.py"
+    ],
+    "record_usage": [
+      "ai_super_router/core/router.py",
+      "memory/core.py"
+    ],
+    "remaining_capacity_score": [
+      "ai_super_router/core/router.py"
+    ],
+    "has_capability": [
+      "ai_super_router/core/router.py"
+    ],
+    "select_provider": [
+      "ai_super_router/core/router.py"
+    ],
+    "report_success": [
+      "ai_super_router/core/router.py"
+    ],
+    "report_failure": [
+      "ai_super_router/core/router.py"
+    ],
+    "get_available_models": [
+      "ai_super_router/core/router.py"
+    ],
+    "scan_all": [
+      "ai_super_router/discovery/scanner.py"
+    ],
+    "verify_resource": [
+      "ai_super_router/discovery/scanner.py"
+    ],
+    "get_report": [
+      "ai_super_router/discovery/scanner.py"
+    ],
+    "risk_premium": [
+      "client_psychometrics/core.py"
+    ],
+    "compute_ccrs": [
+      "client_psychometrics/core.py"
+    ],
+    "payment_terms_from_ccrs": [
+      "client_psychometrics/core.py"
+    ],
+    "get_ensemble_weights": [
+      "cold_start/core.py"
+    ],
+    "ucb1_safe_divide": [
+      "cold_start/core.py"
+    ],
+    "compute_ucb1_score": [
+      "cold_start/core.py"
+    ],
+    "get_predictor_priors": [
+      "cold_start/core.py"
+    ],
+    "initialize_agent_state": [
+      "cold_start/core.py"
+    ],
+    "check": [
+      "compliance/core.py",
+      "compliance/core.py",
+      "compliance/core.py",
+      "compliance/core.py",
+      "compliance/core.py",
+      "triggers/core.py",
+      "triggers/core.py",
+      "triggers/core.py",
+      "triggers/core.py"
+    ],
+    "check_graded": [
+      "compliance/core.py",
+      "compliance/core.py",
+      "compliance/core.py"
+    ],
+    "name": [
+      "compliance/core.py",
+      "compliance/core.py",
+      "compliance/core.py",
+      "compliance/core.py",
+      "compliance/core.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "mission/core.py",
+      "mission/core.py",
+      "mission/core.py",
+      "mission/core.py",
+      "mission/core.py"
+    ],
+    "unregister": [
+      "compliance/core.py",
+      "delivery/core.py",
+      "factors/registry.py",
+      "triggers/core.py"
+    ],
+    "get_rules": [
+      "compliance/core.py",
+      "compliance/core.py"
+    ],
+    "gamma_hard": [
+      "compliance/core.py"
+    ],
+    "gamma_soft": [
+      "compliance/core.py"
+    ],
+    "evaluate": [
+      "compliance/core.py",
+      "verifier/core.py",
+      "verifier/core.py",
+      "verifier/core.py",
+      "verifier/core.py",
+      "verifier/core.py",
+      "verifier/core.py"
+    ],
+    "evaluate_graded": [
+      "compliance/core.py"
+    ],
+    "apply_graded_utility": [
+      "compliance/core.py"
+    ],
+    "evaluate_with_details": [
+      "compliance/core.py"
+    ],
+    "clear_approved": [
+      "compliance/security.py"
+    ],
+    "check_hard_veto": [
+      "compliance/security.py"
+    ],
+    "requires_human_approval": [
+      "compliance/security.py"
+    ],
+    "request_human_approval": [
+      "compliance/security.py"
+    ],
+    "is_approved_by_human": [
+      "compliance/security.py"
+    ],
+    "list_pending_approvals": [
+      "compliance/security.py"
+    ],
+    "list_security_audit_log": [
+      "compliance/security.py"
+    ],
+    "load_constants": [
+      "config/loader.py"
+    ],
+    "load_weights": [
+      "config/loader.py"
+    ],
+    "load_rules": [
+      "config/loader.py"
+    ],
+    "load_prices": [
+      "config/loader.py"
+    ],
+    "load_config": [
+      "config/loader.py"
+    ],
+    "get_config": [
+      "config/loader.py"
+    ],
+    "reload_config": [
+      "config/loader.py"
+    ],
+    "total_tokens": [
+      "cost/token_tracker.py"
+    ],
+    "get_price": [
+      "cost/token_tracker.py"
+    ],
+    "record": [
+      "cost/token_tracker.py",
+      "metrics/monitoring.py"
+    ],
+    "record_tool": [
+      "cost/token_tracker.py"
+    ],
+    "set_base_cost": [
+      "cost/token_tracker.py"
+    ],
+    "get_total_cost": [
+      "cost/token_tracker.py"
+    ],
+    "get_by_model": [
+      "cost/token_tracker.py"
+    ],
+    "get_usage_stats": [
+      "cost/token_tracker.py"
+    ],
+    "reset": [
+      "cost/token_tracker.py",
+      "metrics/tracker.py",
+      "metrics/tracker.py",
+      "utility/control.py",
+      "utility/control.py",
+      "utility/control.py",
+      "utility/reputation.py"
+    ],
+    "send": [
+      "delivery/core.py",
+      "delivery/core.py",
+      "delivery/core.py",
+      "delivery/core.py"
+    ],
+    "health_check": [
+      "delivery/core.py",
+      "delivery/core.py",
+      "delivery/core.py",
+      "delivery/core.py"
+    ],
+    "get_history": [
+      "delivery/core.py",
+      "metrics/tracker.py",
+      "metrics/tracker.py",
+      "verifier/core.py"
+    ],
+    "get_delivered": [
+      "delivery/core.py"
+    ],
+    "clear": [
+      "delivery/core.py",
+      "memory/core.py",
+      "memory/storage.py",
+      "orchestrator/scheduler.py"
+    ],
+    "get_adapter": [
+      "delivery/core.py"
+    ],
+    "list_adapters": [
+      "delivery/core.py"
+    ],
+    "add_lead": [
+      "environment/core.py"
+    ],
+    "stream_leads": [
+      "environment/core.py"
+    ],
+    "simulate_competition": [
+      "environment/core.py"
+    ],
+    "generate_review": [
+      "environment/core.py"
+    ],
+    "create_mvp_registry": [
+      "factors/registry.py"
+    ],
+    "create_full_registry": [
+      "factors/registry.py"
+    ],
+    "compute": [
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "utility/reputation.py"
+    ],
+    "priority": [
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "factors/registry.py",
+      "memory/core.py"
+    ],
+    "enable": [
+      "factors/registry.py"
+    ],
+    "disable": [
+      "factors/registry.py"
+    ],
+    "get_all": [
+      "factors/registry.py",
+      "metrics/tracker.py",
+      "metrics/tracker.py"
+    ],
+    "get_enabled": [
+      "factors/registry.py"
+    ],
+    "compute_all": [
+      "factors/registry.py"
+    ],
+    "compute_total_deltas": [
+      "factors/registry.py"
+    ],
+    "run": [
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py",
+      "market_protocols/core.py"
+    ],
+    "check_payment_terms": [
+      "market_protocols/core.py"
+    ],
+    "check_hard_rules": [
+      "market_protocols/core.py"
+    ],
+    "compute_platform_risk_score": [
+      "market_protocols/core.py"
+    ],
+    "list_protocols": [
+      "market_protocols/core.py"
+    ],
+    "dataclass_from_dict": [
+      "memory/core.py"
+    ],
+    "set": [
+      "memory/core.py"
+    ],
+    "record_step": [
+      "memory/core.py"
+    ],
+    "get_steps": [
+      "memory/core.py"
+    ],
+    "update_metric": [
+      "memory/core.py",
+      "utility/control.py"
+    ],
+    "get_metric": [
+      "memory/core.py"
+    ],
+    "importance": [
+      "memory/core.py"
+    ],
+    "recency": [
+      "memory/core.py"
+    ],
+    "add_episode": [
+      "memory/core.py"
+    ],
+    "get_episodes": [
+      "memory/core.py"
+    ],
+    "get_by_client": [
+      "memory/core.py"
+    ],
+    "hybrid_retrieve": [
+      "memory/core.py"
+    ],
+    "retrieve": [
+      "memory/core.py"
+    ],
+    "recall_strategies": [
+      "memory/core.py"
+    ],
+    "recall_failures": [
+      "memory/core.py"
+    ],
+    "effective_confidence": [
+      "memory/core.py"
+    ],
+    "add_fact": [
+      "memory/core.py"
+    ],
+    "confirm": [
+      "memory/core.py"
+    ],
+    "contradict": [
+      "memory/core.py"
+    ],
+    "get_fact": [
+      "memory/core.py"
+    ],
+    "get_all_facts": [
+      "memory/core.py"
+    ],
+    "get_related": [
+      "memory/core.py"
+    ],
+    "is_active": [
+      "memory/core.py"
+    ],
+    "effective_success_rate": [
+      "memory/core.py"
+    ],
+    "add_skill": [
+      "memory/core.py"
+    ],
+    "get_active_skills": [
+      "memory/core.py"
+    ],
+    "get_skill": [
+      "memory/core.py"
+    ],
+    "find_skills": [
+      "memory/core.py"
+    ],
+    "add_experience": [
+      "memory/core.py"
+    ],
+    "get_experiences": [
+      "memory/core.py"
+    ],
+    "get_recent_episodes": [
+      "memory/core.py"
+    ],
+    "add_rule": [
+      "memory/core.py"
+    ],
+    "get_rule": [
+      "memory/core.py"
+    ],
+    "list_rules": [
+      "memory/core.py"
+    ],
+    "consolidate": [
+      "memory/core.py"
+    ],
+    "migrate_storage_file": [
+      "memory/migrator.py"
+    ],
+    "migrate": [
+      "memory/migrator.py",
+      "memory/migrator.py"
+    ],
+    "register_migration": [
+      "memory/migrator.py"
+    ],
+    "get_migration_path": [
+      "memory/migrator.py"
+    ],
+    "needs_migration": [
+      "memory/migrator.py"
+    ],
+    "from_dict": [
+      "memory/storage.py"
+    ],
+    "persist": [
+      "memory/storage.py"
+    ],
+    "retrieve_with_weighted_ranking": [
+      "memory/storage.py"
+    ],
+    "calculate_similarity": [
+      "memory/transfer.py"
+    ],
+    "calculate_transfer_delta": [
+      "memory/transfer.py"
+    ],
+    "subscribe": [
+      "metrics/monitoring.py"
+    ],
+    "get_latest": [
+      "metrics/monitoring.py"
+    ],
+    "get_alerts": [
+      "metrics/monitoring.py"
+    ],
+    "update": [
+      "metrics/tracker.py",
+      "metrics/tracker.py",
+      "utility/__init__.py",
+      "utility/control.py"
+    ],
+    "get_raw": [
+      "metrics/tracker.py"
+    ],
+    "get_stats": [
+      "metrics/tracker.py",
+      "metrics/tracker.py"
+    ],
+    "compute_phi": [
+      "metrics/tracker.py",
+      "utility/__init__.py"
+    ],
+    "compute_psi": [
+      "metrics/tracker.py",
+      "utility/__init__.py"
+    ],
+    "track": [
+      "metrics/tracker.py",
+      "metrics/tracker.py"
+    ],
+    "get_by_category": [
+      "metrics/tracker.py"
+    ],
+    "get_categories": [
+      "metrics/tracker.py"
+    ],
+    "create_mission": [
+      "mission/core.py"
+    ],
+    "compute_modifiers": [
+      "mission/core.py"
+    ],
+    "calibrate": [
+      "mission/core.py",
+      "mission/core.py",
+      "orchestrator/core.py"
+    ],
+    "principles_to_gamma_rules": [
+      "mission/core.py"
+    ],
+    "process": [
+      "mission/core.py",
+      "mission/core.py",
+      "mission/core.py",
+      "mission/core.py",
+      "mission/core.py"
+    ],
+    "register_rule": [
+      "mission/core.py"
+    ],
+    "decompose": [
+      "mission/core.py"
+    ],
+    "setup_mission": [
+      "mission/core.py"
+    ],
+    "add_compliance_rule": [
+      "mission/core.py"
+    ],
+    "decompose_task": [
+      "mission/core.py"
+    ],
+    "execute_async": [
+      "mission/core.py"
+    ],
+    "execute_best": [
+      "mission/core.py"
+    ],
+    "execute_best_async": [
+      "mission/core.py"
+    ],
+    "get_pipeline_status": [
+      "mission/core.py"
+    ],
+    "create_agent": [
+      "models/agents.py"
+    ],
+    "rating": [
+      "models/agents.py"
+    ],
+    "is_critical": [
+      "models/context.py",
+      "models/task.py"
+    ],
+    "add_error": [
+      "models/context.py"
+    ],
+    "has_errors": [
+      "models/context.py"
+    ],
+    "platt_scale": [
+      "models/task.py"
+    ],
+    "create_task": [
+      "models/task.py"
+    ],
+    "calculate_schedule": [
+      "models/task.py"
+    ],
+    "predict_complexity": [
+      "models/task.py"
+    ],
+    "predict_complexity_self_consistency": [
+      "models/task.py"
+    ],
+    "refresh_deadline": [
+      "models/task.py"
+    ],
+    "is_overdue": [
+      "models/task.py"
+    ],
+    "can_start": [
+      "models/task.py"
+    ],
+    "fail": [
+      "models/task.py"
+    ],
+    "get_task_adaptive_weights": [
+      "optimizer/evaluator.py"
+    ],
+    "evaluate_task_scores": [
+      "optimizer/evaluator.py"
+    ],
+    "compute_cqs": [
+      "optimizer/evaluator.py"
+    ],
+    "calculate_success_probability": [
+      "optimizer/evaluator.py"
+    ],
+    "evaluate_dataset": [
+      "optimizer/evaluator.py"
+    ],
+    "copy": [
+      "optimizer/models.py"
+    ],
+    "generate_synthetic_dataset": [
+      "optimizer/models.py"
+    ],
+    "compute_shapley": [
+      "optimizer/shapley.py"
+    ],
+    "get_attribution_report": [
+      "optimizer/shapley.py"
+    ],
+    "tune_random_search": [
+      "optimizer/tuner.py"
+    ],
+    "tune_hill_climbing": [
+      "optimizer/tuner.py"
+    ],
+    "render_status_block": [
+      "orchestrator/context.py",
+      "orchestrator/core.py"
+    ],
+    "calculate_token_cost": [
+      "orchestrator/core.py"
+    ],
+    "parse_response_content": [
+      "orchestrator/core.py"
+    ],
+    "classify_task": [
+      "orchestrator/core.py"
+    ],
+    "predict_estimates": [
+      "orchestrator/core.py"
+    ],
+    "decide_with_pipeline_context": [
+      "orchestrator/core.py"
+    ],
+    "select_executor": [
+      "orchestrator/core.py"
+    ],
+    "reflect": [
+      "orchestrator/core.py"
+    ],
+    "synthesize": [
+      "orchestrator/core.py"
+    ],
+    "modulate": [
+      "orchestrator/core.py"
+    ],
+    "before_call": [
+      "orchestrator/core.py"
+    ],
+    "record_success": [
+      "orchestrator/core.py"
+    ],
+    "record_failure": [
+      "orchestrator/core.py"
+    ],
+    "worker": [
+      "orchestrator/core.py"
+    ],
+    "route_prompt_detailed": [
+      "orchestrator/core.py"
+    ],
+    "route_prompt": [
+      "orchestrator/core.py"
+    ],
+    "execute_tool": [
+      "orchestrator/core.py"
+    ],
+    "dispatch_full_cycle": [
+      "orchestrator/core.py"
+    ],
+    "attempt_call": [
+      "orchestrator/core.py"
+    ],
+    "deserialize_task": [
+      "orchestrator/scheduler.py"
+    ],
+    "add_task": [
+      "orchestrator/scheduler.py"
+    ],
+    "pop_next_task": [
+      "orchestrator/scheduler.py"
+    ],
+    "list_queue": [
+      "orchestrator/scheduler.py"
+    ],
+    "register_specialist": [
+      "orchestrator/tools.py"
+    ],
+    "record_outcome": [
+      "orchestrator/tools.py"
+    ],
+    "select_best_specialist": [
+      "orchestrator/tools.py"
+    ],
+    "get_specialist": [
+      "orchestrator/tools.py"
+    ],
+    "fire": [
+      "triggers/core.py"
+    ],
+    "get_trigger": [
+      "triggers/core.py"
+    ],
+    "handle_metric_change": [
+      "triggers/core.py"
+    ],
+    "handle_event": [
+      "triggers/core.py"
+    ],
+    "tick": [
+      "triggers/core.py"
+    ],
+    "check_gamma_hard": [
+      "utility/__init__.py"
+    ],
+    "check_gamma_soft": [
+      "utility/__init__.py"
+    ],
+    "update_phi_historical": [
+      "utility/__init__.py"
+    ],
+    "compute_quality": [
+      "utility/__init__.py"
+    ],
+    "compute_upsilon_scalar": [
+      "utility/__init__.py"
+    ],
+    "update_upsilon": [
+      "utility/__init__.py"
+    ],
+    "compute_omega": [
+      "utility/__init__.py"
+    ],
+    "compute_learning_rate": [
+      "utility/__init__.py"
+    ],
+    "compute_h": [
+      "utility/__init__.py"
+    ],
+    "compute_lambda": [
+      "utility/__init__.py"
+    ],
+    "build_factor_context": [
+      "utility/__init__.py"
+    ],
+    "aggregate_factors": [
+      "utility/__init__.py"
+    ],
+    "score_action": [
+      "utility/__init__.py"
+    ],
+    "rank_actions": [
+      "utility/__init__.py"
+    ],
+    "calculate_evolution_score": [
+      "utility/__init__.py"
+    ],
+    "calculate_portfolio_diversity": [
+      "utility/__init__.py"
+    ],
+    "evaluate_decision_rule": [
+      "utility/__init__.py"
+    ],
+    "scalar_reputation": [
+      "utility/__init__.py"
+    ],
+    "update_with_incident": [
+      "utility/__init__.py"
+    ],
+    "predict": [
+      "utility/__init__.py"
+    ],
+    "step": [
+      "utility/__init__.py"
+    ],
+    "calibrate_constants": [
+      "utility/calibration.py"
+    ],
+    "save_calibrated_weights": [
+      "utility/calibration.py"
+    ],
+    "calculate": [
+      "utility/composite.py",
+      "utility/composite.py",
+      "utility/factor_aggregator.py",
+      "utility/profit.py"
+    ],
+    "calculate_from_task": [
+      "utility/composite.py"
+    ],
+    "calculate_from_context": [
+      "utility/composite.py"
+    ],
+    "error": [
+      "utility/control.py"
+    ],
+    "calculate_homeostasis": [
+      "utility/control.py"
+    ],
+    "update_all": [
+      "utility/control.py"
+    ],
+    "get_mode": [
+      "utility/control.py"
+    ],
+    "get_pressures": [
+      "utility/control.py"
+    ],
+    "get_weight_adjustment": [
+      "utility/control.py"
+    ],
+    "calculate_with_custom_context": [
+      "utility/factor_aggregator.py"
+    ],
+    "track_factors": [
+      "utility/factor_aggregator.py"
+    ],
+    "get_registry": [
+      "utility/factor_aggregator.py"
+    ],
+    "compute_phi_risk_adjusted": [
+      "utility/profit.py"
+    ],
+    "calculate_from_components": [
+      "utility/profit.py"
+    ],
+    "get_current": [
+      "utility/reputation.py"
+    ],
+    "apply_decay_only": [
+      "utility/reputation.py"
+    ],
+    "verify": [
+      "verifier/core.py"
+    ],
+    "verify_with_revisions": [
+      "verifier/core.py"
+    ],
+    "reset_history": [
+      "verifier/core.py"
+    ]
+  },
+  "mismatches": [
+    {
+      "function": "compute_phi",
+      "location": "metrics/tracker.py + utility/__init__.py",
+      "doc_formula": "Φ = (R_adj - C) / max(ε_T, T), R_adj = P·(1+b_Q(Q))·ρ_risk",
+      "code_impl": "utility: (modulated_price - c_val) / duration; tracker: return 0.0",
+      "issue": "metrics/tracker.py — заглушка. utility/__init__.py — реализация без ρ_risk (риск-корректировка).",
+      "severity": "HIGH",
+      "recommendation": "Удалить заглушку в tracker.py. Добавить ρ_risk или упростить документацию."
+    },
+    {
+      "function": "compute_psi",
+      "location": "metrics/tracker.py + utility/__init__.py",
+      "doc_formula": "Ψ = P_fail·(C_direct+C_reputation), P_fail = P_base·(1+α_u·U+...)/(1+α_s·S_skill)",
+      "code_impl": "utility: max(0.0, p_fail * (c_direct + c_reputation)); tracker: return 0.0",
+      "issue": "metrics/tracker.py — заглушка. utility/__init__.py — упрощённая версия без факторов U,F,N,D,S.",
+      "severity": "MEDIUM",
+      "recommendation": "Удалить заглушку в tracker.py. Реализовать полную формулу P_fail."
+    },
+    {
+      "function": "compute_quality",
+      "location": "utility/__init__.py",
+      "doc_formula": "Q = w_comp·Q_comp + w_acc·Q_acc + w_full·Q_full + w_time·Q_time, ∈ [0,1]",
+      "code_impl": "min(max(0.0, weighted_sum), 1.0) с quality_bonus",
+      "issue": "Реализация совпадает. Legacy-вариант (без quality_bonus) не проверяет границу [0,1].",
+      "severity": "LOW",
+      "recommendation": "Добавить clamp(0,1) в legacy-вариант."
+    },
+    {
+      "function": "evaluate_decision_rule",
+      "location": "utility/__init__.py",
+      "doc_formula": "Каскад: REJECT→DECLINE→CLARIFY→EXECUTE/DECLINE",
+      "code_impl": "Каскад if/elif с порогами gamma_hard, gamma_soft, phi, psi, q",
+      "issue": "Реализация совпадает с документацией.",
+      "severity": "OK",
+      "recommendation": "Тестировать граничные значения порогов."
+    },
+    {
+      "function": "check_gamma_hard",
+      "location": "utility/__init__.py",
+      "doc_formula": "Γ_hard ∈ {0, -∞}",
+      "code_impl": "except Exception: return float('-inf')",
+      "issue": "Скрывает все ошибки. Документация: 'не бросает исключений' — это контракт, но except Exception — слишком широко.",
+      "severity": "MEDIUM",
+      "recommendation": "Заменить на except (ValueError, TypeError) или явную валидацию."
+    },
+    {
+      "function": "check_gamma_soft",
+      "location": "utility/__init__.py",
+      "doc_formula": "Γ_soft ∈ [0, 1]",
+      "code_impl": "sum(soft_violations) / max(1, len(soft_rules))",
+      "issue": "Реализация совпадает. Но деление на max(1, len) — защита от деления на ноль, не явная проверка.",
+      "severity": "LOW",
+      "recommendation": "Добавить assert len(soft_rules) > 0 или обработать пустой список явно."
+    }
+  ],
+  "gaps": [
+    {
+      "function": "acquire_tool",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "calibrate_with_ewc",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "check_circuit",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "check_global_circuit",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "check_plan_types",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "check_platform_hard_rules",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "compute_anomaly_score",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "compute_initial_confidence",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "compute_priority",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "consolidate_facts",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "decide",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "derive_strategic_posture",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "dispute_protocol_next_step",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "escalation_level",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "extract_skill",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "flag_contradiction_for_review",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "generate_synthetic_task",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "get_candidates",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "platform_risk_score",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "register_executor",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "render_approval_summary",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "retrieve_episodes",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "retrieve_skills",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "score_client_risk",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "score_opportunity",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "select_subcontractor",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "sensitivity",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "solution",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "update_skill_status",
+      "status": "Документирована, не реализована"
+    },
+    {
+      "function": "validate_against_rli_examples",
+      "status": "Документирована, не реализована"
+    }
+  ],
+  "orphans": [
+    {
+      "function": "add_compliance_rule",
+      "module": "mission/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_episode",
+      "module": "memory/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_error",
+      "module": "models/context.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_experience",
+      "module": "memory/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_fact",
+      "module": "memory/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_lead",
+      "module": "environment/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_rule",
+      "module": "memory/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_skill",
+      "module": "memory/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "add_task",
+      "module": "orchestrator/scheduler.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "aggregate_factors",
+      "module": "utility/__init__.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "apply_decay_only",
+      "module": "utility/reputation.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "apply_graded_utility",
+      "module": "compliance/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "attempt_call",
+      "module": "orchestrator/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "before_call",
+      "module": "orchestrator/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "budget_enforcement_execute",
+      "module": "agents/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "build_factor_context",
+      "module": "utility/__init__.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate",
+      "module": "utility/composite.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_evolution_score",
+      "module": "utility/__init__.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_from_components",
+      "module": "utility/profit.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_from_context",
+      "module": "utility/composite.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_from_task",
+      "module": "utility/composite.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_homeostasis",
+      "module": "utility/control.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_portfolio_diversity",
+      "module": "utility/__init__.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_schedule",
+      "module": "models/task.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_similarity",
+      "module": "memory/transfer.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_success_probability",
+      "module": "optimizer/evaluator.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_token_cost",
+      "module": "orchestrator/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_transfer_delta",
+      "module": "memory/transfer.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calculate_with_custom_context",
+      "module": "utility/factor_aggregator.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calibrate",
+      "module": "mission/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "calibrate_constants",
+      "module": "utility/calibration.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "can_handle",
+      "module": "agents/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "can_make_request",
+      "module": "ai_super_router/core/router.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "can_start",
+      "module": "models/task.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "check",
+      "module": "compliance/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "check_all",
+      "module": "ai_super_router/core/health_checker.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "check_graded",
+      "module": "compliance/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "check_hard_rules",
+      "module": "market_protocols/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "check_hard_veto",
+      "module": "compliance/security.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "check_inference",
+      "module": "ai_super_router/core/health_checker.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "check_payment_terms",
+      "module": "market_protocols/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "classify",
+      "module": "ai_super_router/core/client.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "clear",
+      "module": "delivery/core.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "clear_approved",
+      "module": "compliance/security.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "cmd_chat",
+      "module": "ai_super_router/main.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "cmd_compute",
+      "module": "ai_super_router/main.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "cmd_health",
+      "module": "ai_super_router/main.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "cmd_models",
+      "module": "ai_super_router/main.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "cmd_scan",
+      "module": "ai_super_router/main.py",
+      "status": "Реализована, не документирована"
+    },
+    {
+      "function": "cmd_serve",
+      "module": "ai_super_router/main.py",
+      "status": "Реализована, не документирована"
+    }
+  ],
+  "invariants": [
+    {
+      "class": "compute_phi",
+      "module": "utility/__init__.py",
+      "doc_invariant": "Φ ≥ 0 (при R_adj ≥ C), Φ = -∞ при R_adj < C",
+      "code_check": "нет проверки R_adj < C",
+      "verified": "mismatch"
+    },
+    {
+      "class": "compute_psi",
+      "module": "utility/__init__.py",
+      "doc_invariant": "Ψ ≥ 0",
+      "code_check": "max(0.0, ...) — есть",
+      "verified": "ok"
+    },
+    {
+      "class": "compute_quality",
+      "module": "utility/__init__.py",
+      "doc_invariant": "Q ∈ [0,1]",
+      "code_check": "min(max(0.0, ...), 1.0) — есть",
+      "verified": "ok"
+    },
+    {
+      "class": "check_gamma_hard",
+      "module": "utility/__init__.py",
+      "doc_invariant": "Γ_hard ∈ {0, -∞}",
+      "code_check": "except Exception: return -inf",
+      "verified": "ok_по_контракту_но_рискованно"
+    },
+    {
+      "class": "check_gamma_soft",
+      "module": "utility/__init__.py",
+      "doc_invariant": "Γ_soft ∈ [0, 1]",
+      "code_check": "sum/max(1, len)",
+      "verified": "ok"
+    }
+  ],
+  "except_pass_locations": [
+    {
+      "module": "metrics/monitoring.py",
+      "line": 118,
+      "context": "except Exception:"
+    },
+    {
+      "module": "orchestrator/core.py",
+      "line": 299,
+      "context": "except Exception:"
+    },
+    {
+      "module": "orchestrator/core.py",
+      "line": 499,
+      "context": "except Exception as e:"
+    },
+    {
+      "module": "orchestrator/scheduler.py",
+      "line": 115,
+      "context": "except Exception:"
+    }
+  ],
+  "stats": {
+    "doc_functions": 47,
+    "code_functions": 299,
+    "implemented": 17,
+    "not_implemented": 30,
+    "orphans": 282,
+    "mismatches": 6,
+    "except_pass": 4,
+    "parse_errors": 0
+  },
+  "gap_analysis": {
+    "total_gaps": 30,
+    "real_gaps": [
+      "acquire_tool",
+      "derive_strategic_posture",
+      "escalation_level",
+      "extract_skill",
+      "render_approval_summary",
+      "score_opportunity",
+      "select_subcontractor",
+      "sensitivity",
+      "solution",
+      "validate_against_rli_examples"
+    ],
+    "renamed_exact": {
+      "consolidate_facts": "consolidate (memory/core.py)",
+      "decide": "evaluate_decision_rule (utility/__init__.py)",
+      "retrieve_episodes": "retrieve / hybrid_retrieve (memory/core.py)",
+      "retrieve_skills": "find_skills (memory/core.py)",
+      "check_circuit": "check_gamma_hard + check_gamma_soft (utility/__init__.py)",
+      "check_global_circuit": "check_gamma_hard + check_gamma_soft (utility/__init__.py)",
+      "compute_priority": "priority (orchestrator/core.py)",
+      "platform_risk_score": "compute_platform_risk_score (agents/core.py)"
+    },
+    "renamed_partial": {
+      "update_skill_status": "record_usage (memory/core.py) — частичное совпадение",
+      "score_client_risk": "get_by_client (client_psychometrics/core.py) — чтение, не оценка",
+      "render_approval_summary": "render_status_block (orchestrator/core.py) — похоже, но другое",
+      "register_executor": "register + select_executor (orchestrator/core.py) — разделено",
+      "get_candidates": "get_history / get_config (memory/core.py) — не совпадает",
+      "select_subcontractor": "select_executor / select_provider (orchestrator/core.py) — похоже",
+      "dispute_protocol_next_step": "list_protocols (compliance/core.py) — чтение, не действие",
+      "generate_synthetic_task": "create_task (orchestrator/core.py) — ручное, не синтетическое",
+      "check_platform_hard_rules": "check_hard_rules / check_hard_veto (compliance/core.py) — похоже",
+      "compute_anomaly_score": "evaluate_task_scores / compute_ucb1_score (agents/core.py) — похоже",
+      "compute_initial_confidence": "effective_confidence (agents/core.py) — похоже",
+      "flag_contradiction_for_review": "contradictions (memory/core.py) — свойство, не функция",
+      "calibrate_with_ewc": "calibrate / save_calibrated_weights (utility/calibration.py) — похоже",
+      "validate_against_rli_examples": "extract_and_validate / validate_response (agents/core.py) — похоже"
+    },
+    "by_document": {
+      "09_ECOSYSTEM_AND_INTEROP.md": [
+        "acquire_tool",
+        "check_plan_types",
+        "get_candidates",
+        "register_executor",
+        "select_subcontractor"
+      ],
+      "07_CALIBRATION_AND_VALIDATION.md": [
+        "calibrate_with_ewc",
+        "generate_synthetic_task",
+        "sensitivity",
+        "validate_against_rli_examples"
+      ],
+      "10_SECURITY.md": [
+        "check_circuit",
+        "check_global_circuit",
+        "compute_anomaly_score",
+        "compute_initial_confidence",
+        "flag_contradiction_for_review",
+        "render_approval_summary"
+      ],
+      "06_EXTERNAL_ENVIRONMENT.md": [
+        "check_platform_hard_rules",
+        "dispute_protocol_next_step",
+        "escalation_level",
+        "platform_risk_score",
+        "score_client_risk",
+        "score_opportunity"
+      ],
+      "05_MEMORY_AND_STATE.md": [
+        "compute_priority",
+        "consolidate_facts",
+        "derive_strategic_posture",
+        "extract_skill",
+        "retrieve_episodes",
+        "retrieve_skills",
+        "update_skill_status"
+      ],
+      "02_MATHEMATICAL_CORE.md": [
+        "decide"
+      ],
+      "исправления_phase4.md": [
+        "solution"
+      ]
+    }
+  }
+}

@@ -1,0 +1,98 @@
+======================================================================
+SPACЕ1 — ПОЛНЫЙ АУДИТ: ЭТАПЫ 0-7 (ФИНАЛЬНЫЙ)
+======================================================================
+
+--- ЭТАП 0: КАРТА ---
+Документов: 16
+Функций из документации: 47
+Публичных функций в коде: 299
+Реализовано: 17
+Не реализовано: 30
+Орфанов: 282
+
+--- ЭТАП 1-2: МИСМАТЧИ ---
+
+[HIGH] compute_phi (metrics/tracker.py + utility/__init__.py):
+  metrics/tracker.py — заглушка. utility/__init__.py — реализация без ρ_risk (риск-корректировка).
+
+[MEDIUM] compute_psi (metrics/tracker.py + utility/__init__.py):
+  metrics/tracker.py — заглушка. utility/__init__.py — упрощённая версия без факторов U,F,N,D,S.
+
+[LOW] compute_quality (utility/__init__.py):
+  Реализация совпадает. Legacy-вариант (без quality_bonus) не проверяет границу [0,1].
+
+[OK] evaluate_decision_rule (utility/__init__.py):
+  Реализация совпадает с документацией.
+
+[MEDIUM] check_gamma_hard (utility/__init__.py):
+  Скрывает все ошибки. Документация: 'не бросает исключений' — это контракт, но except Exception — слишком широко.
+
+[LOW] check_gamma_soft (utility/__init__.py):
+  Реализация совпадает. Но деление на max(1, len) — защита от деления на ноль, не явная проверка.
+
+--- ЭТАП 3: ПРОБЕЛЫ ---
+Всего gaps: 30
+Реально отсутствуют: 10
+Переименованы (точно): 8
+Переименованы (частично): 12
+
+Реально отсутствуют:
+  ✗ acquire_tool
+  ✗ calibrate_with_ewc
+  ✗ check_circuit
+  ✗ check_global_circuit
+  ✗ check_plan_types
+  ✗ check_platform_hard_rules
+  ✗ compute_anomaly_score
+  ✗ compute_initial_confidence
+  ✗ compute_priority
+  ✗ consolidate_facts
+
+--- ЭТАП 4: ТЕСТЫ ---
+Новый тестовый файл: test_utility_orchestrator_unit.py
+  - compute_phi: 4 теста (UNIT)
+  - compute_psi: 4 теста (UNIT)
+  - compute_quality: 3 теста (UNIT)
+  - check_gamma_hard/soft: 4 теста (UNIT)
+  - compute_h/omega/learning_rate: 3 теста (UNIT)
+  - PAIR: phi+psi независимость
+  - INTEGRITY: quality → phi
+  - REGRESSION: ZeroDivisionError, negative psi
+
+--- ЭТАП 5: СООТВЕТСТВИЕ ---
+compute_phi: КОД ПРОЩЕ ДОКУМЕНТАЦИИ (нет ρ_risk)
+compute_psi: КОД ПРОЩЕ ДОКУМЕНТАЦИИ (нет P_fail с факторами)
+compute_quality: СОВПАДАЕТ
+evaluate_decision_rule: СОВПАДАЕТ
+metrics/tracker.py: ЗАГЛУШКИ (compute_phi/psi = 0.0)
+
+--- ЭТАП 6: ИНВАРИАНТЫ ---
+[GAP] AgentCapabilities: 25 полей, первые 17 ∈ [0,1] → 25 полей, нет валидации [0,1]
+[GAP] ReputationVector: 6 полей ∈ [0,1] → 6 полей, нет валидации
+[GAP] AgentMetrics: balance ≥ 0, token_budget ≥ 0 → Нет __post_init__
+[PARTIAL] Task: priority ∈ enum, status ∈ enum, deadline ≥ now → Только deadline ≥ now
+[MISMATCH] compute_phi: Φ ≥ 0 или -∞ → Нет проверки R_adj < C
+[OK] compute_psi: Ψ ≥ 0 → max(0.0, ...) — OK
+[OK] compute_quality: Q ∈ [0,1] → min(max(0,1)) — OK
+[OK] HealthCheckResult: Валидация полей → __post_init__ есть
+[OK] Provider: Валидация полей → __post_init__ есть
+[OK] MissionPolicy: Валидация полей → __post_init__ есть
+
+--- ЭТАП 7: БЕСПОЛЕЗНЫЕ ФУНКЦИИ ---
+Заглушки: compute_phi/psi в metrics/tracker.py
+ai_super_router: ИСПОЛЬЗУЕТСЯ (49 ссылок) — оставить
+client_psychometrics: ИСПОЛЬЗУЕТСЯ (2 ссылки) — оставить
+Мёртвый код: 135 функций без вызовов
+  → agents/core.py: lead_evaluation_execute, task_execution_execute и др.
+  → ai_super_router/: handle_chat_completions, handle_models и др.
+
+======================================================================
+ПОРЯДОК ДЕЙСТВИЙ:
+1. Удалить заглушки metrics/tracker.py::compute_phi/psi
+2. Добавить __post_init__ в AgentCapabilities, ReputationVector, AgentMetrics
+3. Добавить проверку R_adj < C в compute_phi
+4. Добавить clamp(0,1) в legacy compute_quality
+5. Убрать except Exception: pass (4 случая)
+6. Документировать/удалить 135 функций без вызовов
+7. Унифицировать имена: consolidate→consolidate_facts, decide→evaluate_decision_rule
+======================================================================

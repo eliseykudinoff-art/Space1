@@ -1,0 +1,98 @@
+======================================================================
+SPACЕ1 — ПОЛНЫЙ АУДИТ v3 (исправленный)
+======================================================================
+
+--- СТАТИСТИКА ---
+  Документов проанализировано: 16
+  Функций из документации: 47
+  Реализовано: 17/47
+  Не реализовано: 30
+  Публичных функций в коде: 299
+  Орфанов (не в документации): 282
+  Mismatches: 6
+  except Exception: pass: 4
+
+--- РЕАЛИЗОВАННЫЕ ФУНКЦИИ (17) ---
+  ✓ check_gamma_hard (utility/__init__.py)
+  ✓ check_gamma_soft (utility/__init__.py)
+  ✓ classify_task (orchestrator/core.py)
+  ✓ compute_h (utility/__init__.py)
+  ✓ compute_learning_rate (utility/__init__.py)
+  ✓ compute_omega (utility/__init__.py)
+  ✓ compute_phi (metrics/tracker.py, utility/__init__.py)
+  ✓ compute_psi (metrics/tracker.py, utility/__init__.py)
+  ✓ compute_quality (utility/__init__.py)
+  ✓ compute_upsilon_scalar (utility/__init__.py)
+  ✓ decide_with_pipeline_context (orchestrator/core.py)
+  ✓ predict_estimates (orchestrator/core.py)
+  ✓ reflect (orchestrator/core.py)
+  ✓ render_status_block (orchestrator/context.py, orchestrator/core.py)
+  ✓ select_executor (orchestrator/core.py)
+  ✓ update_phi_historical (utility/__init__.py)
+  ✓ update_upsilon (utility/__init__.py)
+
+--- НЕ РЕАЛИЗОВАННЫЕ (30) ---
+  ✗ acquire_tool
+  ✗ calibrate_with_ewc
+  ✗ check_circuit
+  ✗ check_global_circuit
+  ✗ check_plan_types
+  ✗ check_platform_hard_rules
+  ✗ compute_anomaly_score
+  ✗ compute_initial_confidence
+  ✗ compute_priority
+  ✗ consolidate_facts
+  ✗ decide
+  ✗ derive_strategic_posture
+  ✗ dispute_protocol_next_step
+  ✗ escalation_level
+  ✗ extract_skill
+  ✗ flag_contradiction_for_review
+  ✗ generate_synthetic_task
+  ✗ get_candidates
+  ✗ platform_risk_score
+  ✗ register_executor
+  ✗ render_approval_summary
+  ✗ retrieve_episodes
+  ✗ retrieve_skills
+  ✗ score_client_risk
+  ✗ score_opportunity
+  ✗ select_subcontractor
+  ✗ sensitivity
+  ✗ solution
+  ✗ update_skill_status
+  ✗ validate_against_rli_examples
+
+--- МИСМАТЧИ ---
+
+[HIGH] compute_phi (metrics/tracker.py + utility/__init__.py):
+  Issue: metrics/tracker.py — заглушка. utility/__init__.py — реализация без ρ_risk (риск-корректировка).
+  Rec: Удалить заглушку в tracker.py. Добавить ρ_risk или упростить документацию.
+
+[MEDIUM] compute_psi (metrics/tracker.py + utility/__init__.py):
+  Issue: metrics/tracker.py — заглушка. utility/__init__.py — упрощённая версия без факторов U,F,N,D,S.
+  Rec: Удалить заглушку в tracker.py. Реализовать полную формулу P_fail.
+
+[LOW] compute_quality (utility/__init__.py):
+  Issue: Реализация совпадает. Legacy-вариант (без quality_bonus) не проверяет границу [0,1].
+  Rec: Добавить clamp(0,1) в legacy-вариант.
+
+[OK] evaluate_decision_rule (utility/__init__.py):
+  Issue: Реализация совпадает с документацией.
+  Rec: Тестировать граничные значения порогов.
+
+[MEDIUM] check_gamma_hard (utility/__init__.py):
+  Issue: Скрывает все ошибки. Документация: 'не бросает исключений' — это контракт, но except Exception — слишком широко.
+  Rec: Заменить на except (ValueError, TypeError) или явную валидацию.
+
+[LOW] check_gamma_soft (utility/__init__.py):
+  Issue: Реализация совпадает. Но деление на max(1, len) — защита от деления на ноль, не явная проверка.
+  Rec: Добавить assert len(soft_rules) > 0 или обработать пустой список явно.
+
+--- EXCEPT EXCEPTION: PASS ---
+  metrics/monitoring.py:118 — except Exception:
+  orchestrator/core.py:299 — except Exception:
+  orchestrator/core.py:499 — except Exception as e:
+  orchestrator/scheduler.py:115 — except Exception:
+
+======================================================================
