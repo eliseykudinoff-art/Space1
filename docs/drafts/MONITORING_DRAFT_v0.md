@@ -1,78 +1,58 @@
 # MONITORING_DRAFT_v0 — Мониторинг под гомеостаз (черновик)
 
-> **Дата:** 2026-08-03 · **Статус:** черновик наблюдения; не код, не замена `02`.
-> **Принцип:** ни одному источнику не верить слепо.
+> **Дата:** 2026-08-03 · обновление: перепроверка 06/09/10.
+> Monitor = факты + alerts → гормоны → мотор. Не меню работ. STALL запрещён.
 
-### Источники сверки
+## Роль и режимы
 
-| Источник | Взяли | Не поверили вслепую |
-|----------|-------|---------------------|
-| ARCHIVE/SYSTEM_MONITORING.md | M001–M047, DORMANT…, частоты | алерты≠действия; ratio=Λ не наш пульс |
-| 05 §VII | OperationalStatus ⊥ StrategicPosture | не полный sensor list |
-| 06 | PlatformRiskScore | нет в архивном SYSTEM_MONITORING |
-| 10_SECURITY | Anomaly → StatusBlock | не авто-стоп |
-| HOMEOSTASIS_* | S/G, motor, EventID | канон мотора |
-| monitoring.py | факт runtime | 3 порога, нет loop |
-| 01 OWNER/emergency | приоритет | почти нет в SYSTEM_MONITORING |
+OperationalStatus (DORMANT/ACTIVE/RECOVERING/SUSPENDED) ⊥ StrategicPosture ⊥ HormoneMode.
+stress_level ≠ гормональный S.
 
-## 1. Роль
+## Реестр (сводка + дельта 06/09/10)
 
-Monitor = факты + thresholds + alerts → гормоны (пульс) → мотор (URGE).
-Monitor **не** мотор и не меню работ. `stress_level` ≠ гормональный S.
+### Уже из SYSTEM_MONITORING / гомеостаза
+memory/skill/budget/queue health; tokens; rate limit; staleness; decay; deadlock; compliance; τ_idle; deferred backlog; OWNER/EMERGENCY; provider health.
 
-## 2. Три ортогональных режима
+### Добавлено после 06
+- payment overdue → EXT.PAYMENT_OVERDUE / спор
+- DISPUTE_OPENED + open_disputes counter
+- PlatformRiskScore + account suspend → SUSPENDED + Γ no new account
+- off-platform channel / IP-geo consistency → PRS / compliance
+- median_bid dump → market gauge
+- REPUTATION_HIT
 
-- OperationalStatus: DORMANT/ACTIVE/RECOVERING/SUSPENDED
-- StrategicPosture: derive(H|D, Mission)
-- HormoneMode: calm/mixed/urgent/prospective
+### Добавлено после 09
+- Trust(e), ToolScore.reliability series
+- Tool acquisition sandbox/test fail
+- Typed DSL typecheck fail (counter / rework)
+- MCP fail (TOOL.FAIL); A2A card verify fail; AP2 payment error
 
-STALL запрещён; DORMANT + IDLE_TICK + heartbeat.
+### Добавлено после 10
+- Circuit breaker task OPEN (уже в коде — в Monitor!)
+- **Global circuit** (H, platform_risk, session_open_ratio) → stop intake + status
+- Anomaly score → StatusBlock + HITL, **не** авто S=1
+- Audit log health; memory contradiction flag; HITL_TIMEOUT
 
-## 3. Шины
+### Одна шина
+06 PlatformRiskScore и 10 anomaly/CB — один Monitor, разные подписчики (hormones / StatusBlock / stop-intake).
 
-Gauge (период) → порог → Alert → EventID или только h_i.
-Event (stage/router/Γ/owner) → сразу on_event; Monitor логирует counter.
-subscribe → HomeostasisService.
+## Alert → Event (дополнение)
 
-## 4. Реестр сигналов (сверка)
+PAYMENT_OVERDUE, DISPUTE_OPENED, REPUTATION_HIT, TOOL.ACQ_FAIL, A2A_VERIFY_FAIL, CB_OPEN / CB_GLOBAL_TRIP, HITL_TIMEOUT, EXT.SECURITY_WARNING.
 
-**Arch есть, code почти нет:** memory/skill/budget/queue health, tokens, rate limit, staleness, decay, order_flow, deadlock, compliance as monitor series.
-
-**Упущено архивом SYSTEM_MONITORING, требуется концепцией:**
-PlatformRiskScore (06); τ_idle; deferred backlog; OWNER/EMERGENCY; INTERNAL queue; anomaly (10); circuit breaker; security warning; sandbox/reflect debt; token quota vs $; STALL metric.
-
-**HealthChecker LLM** — есть, не в Monitor. **MetricRegistry** — EMA, не alerts.
-
-## 5. Alert → EventID (норматив)
-
-budget critical → RES.BUDGET_BLOCK; tokens → RES.TOKENS_*; rate/provider → RES.RATE_LIMIT / EXT.PROVIDER_WARNING; compliance → EXT.COMPLIANCE_HIT; PlatformRisk critical → EXT.PLATFORM_WARNING; deadlock → EXEC.LOOP/NO_PROGRESS; verifier → VERIFIER_FAIL; tool → TOOL.FAIL; memory → MEMORY.GAP; staleness/decay → DEF.*; security → EXT.SECURITY_WARNING; owner emergency → OWNER.EMERGENCY.
-
-## 6. Каденция
-
-DORMANT: 30–60s heartbeat + heavier 5–60min.
-ACTIVE: 10–30s + on stage events.
-RECOVERING: 10–30s focus.
-SUSPENDED: basic + HITL only.
-
-Background loop — обязанность Monitor (в архиве был, в коде нет).
-
-## 7. MVP среза
+## MVP срез (расширенный)
 
 1. OperationalStatus + IDLE_TICK
-2. Gauges: budget/tokens, queue, τ_idle, compliance, provider, no-progress
-3. map §5 minimal
-4. subscribe → homeostasis
-5. background ≥ heartbeat
-6. PlatformRisk stub
-7. backlog age tick
+2. budget/tokens, queue, τ_idle, compliance, provider, no-progress
+3. map alerts → events + subscribe → HomeostasisService
+4. background heartbeat
+5. PlatformRisk stub + global CB state
+6. backlog age
+7. dispute/payment overdue hooks when protocols live
 
-## 8. Не входит
+## Не в пульс автоматически
 
-job-type, Φ/U/VoI, замена Γ, Mission→stress, UI.
-
-## 9. Открытые
-
-Пороги PRS; anomaly в MVP?; Monitor vs Registry store; owner background process.
+anomaly (только StatusBlock/HITL); daily finance KPI без CRITICAL; Mission change.
 
 ---
-*MONITORING_DRAFT_v0 · 2026-08-03*
+*MONITORING_DRAFT_v0 · recheck 06/09/10 · 2026-08-03*
