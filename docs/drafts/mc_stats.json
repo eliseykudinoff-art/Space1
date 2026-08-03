@@ -1,0 +1,12 @@
+{
+  "global": {
+    "N_RUNS": 400,
+    "T_STEPS": 100,
+    "SEED": 42,
+    "S_mean_overall": {"mean": 0.4225, "std": 0.2920, "p50": 0.4903, "p95": 0.7764},
+    "idle_chronic_rate": 0.0,
+    "calm_chronic_rate": 0.0,
+    "crisis_recovery_rate": 1.0
+  },
+  "note": "Full by_regime percentiles in local artifacts/docs_drafts/mc_stats.json after monte_carlo.py"
+}
