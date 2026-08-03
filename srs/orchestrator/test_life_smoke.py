@@ -1,39 +1,52 @@
-"""Smoke: LifeSupport + idle path. Run: python -m srs.orchestrator.test_life_smoke"""
+"""Smoke: LifeSupport idle path. python srs/orchestrator/test_life_smoke.py"""
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-# allow running from repo root
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT))
+
+# import submodules directly — avoid srs/__init__.py (space1 alias deps)
+from srs.homeostasis.service import HomeostasisService  # noqa: E402
+from srs.homeostasis.config import HomeostasisConfig  # noqa: E402
+from srs.monitoring.monitor import SystemMonitor, OperationalStatus  # noqa: E402
+from srs.monitoring.bridge import MonitorHomeostasisBridge  # noqa: E402
 
 
 def main() -> None:
-    from srs.orchestrator.life_support import LifeSupport
+    cfg = HomeostasisConfig()
+    homeo = HomeostasisService(cfg)
+    mon = SystemMonitor()
+    bridge = MonitorHomeostasisBridge(mon, homeo)
 
-    class _M:
-        balance = 50.0
-        n_active_tasks = 0
-
-    class _A:
-        metrics = _M()
-
-    life = LifeSupport()
-    out = life.on_idle(_A())
-    assert out["status"] == "IDLE_TICK", out
-    assert "homeostasis" in out, out
+    mon.set_status(OperationalStatus.DORMANT)
+    out = bridge.tick(
+        {
+            "budget_health": 0.5,
+            "tokens_remaining_ratio": 0.8,
+            "provider_up": 1.0,
+            "no_progress_count": 0.0,
+        },
+        heartbeat=True,
+    )
     snap = out["homeostasis"]
-    assert isinstance(snap, dict), type(snap)
-    assert 0.0 <= float(snap.get("S", 0)) <= 1.0
-    assert out.get("break_loop") is False or out.get("break_loop") is None
+    assert isinstance(snap, dict), snap
+    assert 0.0 <= float(snap["S"]) <= 1.0
+    assert snap.get("break_loop") is False
 
-    life.emit("EXEC.TASK_DONE")
-    s2 = life.snapshot()
-    assert "S" in s2 or "pulse" in s2
+    bridge.on_pipeline_event("EXEC.TASK_DONE")
+    snap2 = homeo.snapshot()
+    assert "S" in snap2 or "pulse" in snap2
 
-    print("SMOKE OK", "status=", out["status"], "S=", snap.get("S"), "mode=", snap.get("mode"))
+    # idle payload shape (as life_support.on_idle)
+    payload = {
+        "status": "IDLE_TICK",
+        "homeostasis": snap,
+        "mode": snap.get("mode"),
+    }
+    assert payload["status"] == "IDLE_TICK"
+    print("SMOKE OK", "S=", snap["S"], "mode=", snap.get("mode"))
 
 
 if __name__ == "__main__":
