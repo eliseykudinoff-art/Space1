@@ -1,17 +1,9 @@
 """Bridge: SystemMonitor alerts → HomeostasisService."""
 from __future__ import annotations
-import sys
-from pathlib import Path
 from typing import TYPE_CHECKING
-
-_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_ROOT / "homeostasis"))
-sys.path.insert(0, str(_ROOT / "monitoring"))
-
-from monitor import Alert, AlertLevel, OperationalStatus, SystemMonitor
-
+from .monitor import Alert, OperationalStatus, SystemMonitor
 if TYPE_CHECKING:
-    from service import HomeostasisService
+    from ..homeostasis.service import HomeostasisService
 
 class MonitorHomeostasisBridge:
     def __init__(self, monitor: SystemMonitor, homeo: "HomeostasisService"):
@@ -55,7 +47,6 @@ class MonitorHomeostasisBridge:
             self.sync_axes_from_gauges()
             snap = self.homeo.step()
             return self._pack(fired, snap, False)
-        # heartbeat first; alerts last so trap/break_loop not wiped
         if heartbeat:
             self.homeo.on_heartbeat()
         fired = self.monitor.background_tick(gauges)
