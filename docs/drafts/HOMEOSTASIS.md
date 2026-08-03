@@ -1,89 +1,70 @@
-# Гомеостаз Space1 — рабочая документация (черновик)
+# Гомеостаз Space1 — канон черновика
 
-> **Статус:** принятая нарезка контуров (владелец, 2026-08-03).
-> **Версия документа:** 0.4
-> **Математика модуля:** `HOMEOSTASIS_MATH_v0.md` (тема закрыта на уровне документации).
-> **Перенос в `02`:** позже. **Код пульса/мотора:** не реализован (техдолг).
+> **Версия:** 1.0 · **2026-08-03** · `docs/drafts/`
+> **Статус:** единственный канон темы гомеостаза в drafts.
+> **Код:** `srs/homeostasis/` (не врезан).
+> **Не канон:** homeostasis_v2 (отвергнут), legacy HomeostaticRegulator (пока в runtime).
+> **Рядом:** `MONITORING.md`, `HOMEOSTASIS_INTEGRATION_PLAN.md`.
+> Перенос в `02` — позже.
 
-| Файл | Содержание |
-|------|------------|
-| `HOMEOSTASIS.md` (этот) | Роли, инварианты, техдолг |
-| `HOMEOSTASIS_EVENTS_v0.md` | Словарь событий → пульс |
-| `HOMEOSTASIS_MATH_v0.md` | Формулы S,G,D,U_urge,L,ρ,RPE |
-| `HOMEOSTASIS_DRAFT_v3_CONTOURS.md` | Краткая фиксация ролей |
-| `HOMEOSTASIS_DRAFT_v1.md` | Устарел |
+## 1. Роль
 
----
-
-## 1. Зачем
-
-Агент должен жить, не только отвечать на очередь. Без stress — бесконечные LLM-петли. Пустая очередь + «зелёные» метрики → STALL — не автономия. Гомеостаз = мотор; гормоны = пульс; метрики = зрение после ревизии.
-
----
-
-## 2. Контуры
+Гомеостаз — **единственный мотор жизни**. Гормоны — **пульс**. Метрики — зрение. Миссия — акценты метрик (не прямой stress). Γ — стоп-кран.
 
 ```text
-События → [ГОРМОНЫ: S,G] → [ГОМЕОСТАЗ fast/slow: U_urge] → [РЕВИЗИЯ] → [МЕТРИКИ+Γ+𝒟+LLM]
+События / алерты Monitor → [Гормоны S,G] → [Мотор D, U_urge, mode, break_loop]
+    → ревизия → метрики + Γ + 𝒟 + LLM
 ```
 
-- **Гормоны:** реакция на события (токены, reject, warning, тупик, скука, успех). Не считают Φ, не выбирают LLM.
-- **Гомеостаз:** fast — URGE, break_loop; slow — allostatic load L и ρ.
-- **Ревизия:** ясность «где перекос».
-- **Метрики/действие:** как и можно ли (Γ_hard = veto).
+Go / низкий S → **развитие**, не sleep. Высокий S / overdue backlog → **срочность**.
 
-Инварианты: жизнь не только от pop_task; скука=stress; нет меню EARN из пульса.
+## 2. Инварианты
 
----
+1. Жизнь не только от `pop_next_task`. STALL запрещён → IDLE_TICK.
+2. Скука = stress (мягкий).
+3. Mission ↛ S/G напрямую.
+4. Нет job-types из пульса.
+5. Γ_hard не заменяется.
+6. Отложенные дела стареют в stress.
 
-## 3. Формулы (указатель)
+## 3. События → пульс
 
-Всё в **`HOMEOSTASIS_MATH_v0.md`**:
+RES: TOKENS_*, BUDGET_BLOCK, RATE_LIMIT
+EXT: REJECTED, COMPLIANCE_HIT, PLATFORM/PROVIDER/SECURITY_WARNING, PAYMENT_OVERDUE, DISPUTE_OPENED, REPUTATION_HIT
+EXEC: NO_PROGRESS, VERIFIER_FAIL, LOOP, DEAD_END, STEP_OK, TASK_DONE/FAILED
+IDLE: HEARTBEAT, QUEUE_EMPTY, NO_SIGNIFICANT_WORK
+OUT: BETTER/WORSE, BLOCK_CLEARED
+OWNER: TASK_RECEIVED, EMERGENCY
+TOOL: FAIL, ACQ_FAIL · MEMORY: GAP · DEF: ADDED/DONE/OVERDUE
+SYS: CB_OPEN, CB_GLOBAL_TRIP, HITL_TIMEOUT, A2A_VERIFY_FAIL
 
-| § | Содержание |
-|---|------------|
-| 1 | Оси h_i, ошибки, drive D |
-| 2 | Пульс S,G, decay, a_S/a_G, boredom |
-| 3 | U_urge, break_loop, H_motor |
-| 4 | RPE δ |
-| 5 | L, ρ, setpoint shift |
-| 6 | Алгоритм шага, выходной контракт |
-| 7 | Cold-start параметры |
+Не события: MISSION.CHANGED, LLM.SELECTED, PHI.RECOMPUTED.
 
-Кратко:
+Пересчёт: событие ∨ heartbeat ∨ существенный Δh_i.
+Slow L,ρ: каждый K-й heartbeat ∨ major-аварии.
 
-- D = Σ w_i max(0,ε_i)^p
-- S,G: decay + a(e); boredom от τ_idle
-- U_urge = ρ (α_S S + α_D D)
-- revision_needed ⇔ U_urge ≥ θ_rev
-- break_loop ⇔ trap ∨ S ≥ θ_break
-- L — EMA от S,D,fails; ρ = ρ_0 + κ_L L
+## 4. Формулы
 
----
+D=Σ w_i max(0,ε_i)^p
+Decay S,G; событие +a_S,a_G; boredom b(τ−τ_0)/(τ_0+τ)
+S_def от backlog; U_urge=ρ(α_S S+α_D D+α_def S_def)
+revision ⇔ U≥θ_rev; break_loop ⇔ trap ∨ S≥θ_break
 
-## 4. Связь с 02
+Cold-start: b≈0.03–0.035, λ_S≈0.12, θ_rev≈0.28, S_eq idle ∈[0.15,0.30].
 
-H (4 ratio), Λ — не замена модуля; перенос формул в 02 отложен. homeostasis_v2 (EARN) — не канон.
+## 5. Аффекторы
 
----
+Ресурсы · rejects/warnings · traps/progress · idle · backlog (rules, skill, sandbox, reflect, relations, tools, owner…) · entropy · tool/memory · reputation · owner · L.
+Не: Mission сама; выбор LLM; голый Φ.
 
-## 5. Техдолг
+## 6. Выход
 
-Нет runtime-пульса; цикл от очереди; нужна существенная перепись оркестратора под тик без pop_task и URGE→ревизия.
+S, G, D, S_def, U_urge, L, ρ, revision_needed, break_loop, mode.
+Не: job-type, model, bid.
 
----
+## 7. Старое
 
-## 6. Статус темы «гомеостаз» (документация)
-
-| Элемент | Статус |
-|---------|--------|
-| Роли контуров | зафиксированы |
-| Словарь событий | v0 |
-| Формулы модуля | MATH_v0 |
-| Калибровка чисел | нет (нужны логи/код) |
-| Код | нет |
-| В `02` | нет |
+H (4 ratio), Λ — log/диагностика. v2 EARN — мусор. Канон кода: `srs/homeostasis/`.
 
 ---
-
-*HOMEOSTASIS.md · 0.4 · 2026-08-03*
+*Канон гомеостаза drafts · 1.0*
