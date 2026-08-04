@@ -1,9 +1,13 @@
 """
-LifeAwareOrchestrator — autonomy via life motor + optional inbound work units.
+LifeAwareOrchestrator — life motor before/around the pipeline.
 
-Primary: homeostasis on idle → seek work (revision_needed).
-Secondary: inbound task perturbs hormones and may enter the queue.
-Utility U exists only in decision/phi layer — motor uses `urge`, never U.
+Canon (ARCHIVE + concept):
+  Homeostasis produces state (S, G, urge, mode, revision_needed).
+  That state is an input to prompt synthesis → LLM performs actions
+  (search work, handle order, etc.). No parallel seek_job / self_task loops.
+
+Inbound queue items are optional external events, not the primary driver.
+Utility U exists only in decision/phi — motor field is `urge`.
 """
 from __future__ import annotations
 
@@ -45,6 +49,7 @@ class Orchestrator(_BaseOrchestrator):
 
     def dispatch_full_cycle(self, mission_profile: str = "BALANCED") -> Dict[str, Any]:
         if not self.scheduler.list_queue():
+            # Life tick only. Does not invent tasks. Signal for LLM is snapshot below.
             return self.life.on_idle(self.core_agent)
 
         self.life.monitor.set_status(OperationalStatus.ACTIVE)
