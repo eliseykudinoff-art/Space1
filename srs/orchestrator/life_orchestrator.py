@@ -1,10 +1,8 @@
 """
-LifeAwareOrchestrator — P0: single life motor on top of core pipeline.
+LifeAwareOrchestrator — pre-LLM upper layer + post status events.
 
-- Empty queue → IDLE_TICK (never STALL for public API)
-- Pipeline statuses → hormone events
-- Gauges synced from agent metrics
-- notify(event_id) for router / protocols / owner
+Does not touch SignalToContextSynthesizer.
+Wires life → Stage II H (via self.life on base) and mission_profile accent.
 """
 from __future__ import annotations
 
@@ -17,9 +15,17 @@ from .core import Orchestrator as _BaseOrchestrator
 from .life_support import LifeSupport
 
 
-class Orchestrator(_BaseOrchestrator):
-    """Drop-in replacement: core pipeline + life support."""
+def _accent_mission(profile: str, life_mode: Optional[str]) -> str:
+    if profile and profile != "BALANCED":
+        return profile
+    if life_mode == "urgent":
+        return "SURVIVAL"
+    if life_mode == "prospective":
+        return "GROWTH"
+    return profile or "BALANCED"
 
+
+class Orchestrator(_BaseOrchestrator):
     def __init__(self, core_agent: Agent, veto: Optional[GammaVeto] = None):
         super().__init__(core_agent, veto)
         self.life = LifeSupport()
@@ -29,7 +35,12 @@ class Orchestrator(_BaseOrchestrator):
             return self.life.on_idle(self.core_agent)
 
         self.life.monitor.set_status(OperationalStatus.ACTIVE)
-        result = super().dispatch_full_cycle(mission_profile)
+        self.life.sync_from_agent(self.core_agent)
+        pre = self.life.homeostasis.step()
+        pre_mode = pre.mode if hasattr(pre, "mode") else (pre.get("mode") if isinstance(pre, dict) else None)
+        profile = _accent_mission(mission_profile, pre_mode)
+
+        result = super().dispatch_full_cycle(profile)
         status = result.get("status") or ""
 
         if status == "STALL":
@@ -45,14 +56,15 @@ class Orchestrator(_BaseOrchestrator):
         result["homeostasis"] = snap
         result["monitor_status"] = self.life.monitor.status.value
         result["life_mode"] = snap.get("mode")
+        result["mission_profile_used"] = profile
         result["revision_needed"] = snap.get("revision_needed", False)
         result["break_loop"] = snap.get("break_loop", False)
-
-        if result.get("mission_recalibrated") and snap.get("mode") == "calm":
-            result["dual_homeostat_note"] = "legacy Stage XII flag set; life mode calm"
-
+        result["pre_llm"] = {
+            "life_mode_before": pre_mode,
+            "mission_profile_used": profile,
+            "H_source": "life",
+        }
         return result
 
     def notify(self, event_id: str) -> Dict[str, Any]:
-        """External systems (router, protocols, owner) push events into life motor."""
         return self.life.emit_external(event_id, self.core_agent)
