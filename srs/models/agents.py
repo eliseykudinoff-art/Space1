@@ -6,55 +6,46 @@ Reference: DEVELOPMENT_PLAN.md - G11 (Data classes)
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TypedDict
 from enum import Enum
 
 
 class AgentStatus(Enum):
-    """Статус агента."""
     IDLE = "idle"
     WORKING = "working"
     BLOCKED = "blocked"
     ERROR = "error"
 
 
+class ReputationVector(TypedDict, total=False):
+    """6-dim reputation vector (utility / tests contract)."""
+    tech: float
+    econ: float
+    comm: float
+    rel: float
+    sec: float
+    domain: float
+
+
 @dataclass
 class AgentCapabilities:
-    """
-    Возможности агента — 17 факторов (02_MATHEMATICAL_CORE.md Приложение A).
-    
-    x₁-x₁₇: llm_quality, code_gen, data_analysis, browser, code_exec,
-    multimodal, negotiation, legal, design, research, testing, devops,
-    i18n, accessibility, performance, security_audit, data_privacy
-    """
-    # Core LLM (x₁-x₄)
     llm_quality: float = 0.7
     code_gen: float = 0.7
     data_analysis: float = 0.7
     llm_reasoning: float = 0.7
-    
-    # Tools & Execution (x₅-x₇)
     browser: float = 0.0
     code_exec: float = 0.0
     multimodal: float = 0.0
-    
-    # Soft skills (x₈-x₁₀)
     negotiation: float = 0.5
     legal: float = 0.5
     design: float = 0.5
-    
-    # Domain expertise (x₁₁-x₁₃)
     research: float = 0.5
     testing: float = 0.5
     devops: float = 0.5
-    
-    # Specialized (x₁₄-x₁₇)
     i18n: float = 0.5
     accessibility: float = 0.5
     performance: float = 0.5
     security_audit: float = 0.5
-    
-    # Backward-compatible aliases
     llm_name: str = "unknown"
     llm_coding: float = 0.7
     llm_agentic: float = 0.7
@@ -63,8 +54,7 @@ class AgentCapabilities:
     has_mcp: bool = False
     n_completed_tasks: int = 0
     current_knowledge: float = 0.0
-    
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "llm_name": self.llm_name,
@@ -101,43 +91,28 @@ class AgentCapabilities:
 
 @dataclass
 class AgentMetrics:
-    """
-    Текущие метрики агента.
-    
-    Соответствует гомеостатическим переменным.
-    """
-    # Финансы
     balance: float = 0.0
     total_earned: float = 0.0
     total_spent: float = 0.0
-    
-    # Репутация — 6-мерный вектор Υ (02_MATHEMATICAL_CORE.md §IV.5)
-    # tech=техническая, econ=экономическая, comm=коммуникационная,
-    # rel=реляционная, sec=безопасность, domain=доменная
     reputation_vector: Dict[str, float] = field(default_factory=lambda: {
         "tech": 0.5, "econ": 0.5, "comm": 0.5, "rel": 0.5, "sec": 0.5, "domain": 0.5
     })
     n_reviews: int = 0
     n_positive: int = 0
 
-    # Backward-compatible scalar rating (computed from vector)
     @property
     def rating(self) -> float:
-        """Scalar reputation: weighted average of 6 dimensions."""
         if not self.reputation_vector:
             return 0.0
         weights = {"tech": 0.20, "econ": 0.25, "comm": 0.15, "rel": 0.15, "sec": 0.15, "domain": 0.10}
         return sum(self.reputation_vector.get(k, 0.5) * w for k, w in weights.items())
-    
-    # Работа
+
     success_rate: float = 0.3
     avg_task_time: float = 1.0
     n_active_tasks: int = 0
-    
-    # Ресурсы
     token_budget: float = 100.0
     tokens_used: float = 0.0
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "balance": self.balance,
@@ -156,31 +131,14 @@ class AgentMetrics:
 
 @dataclass
 class Agent:
-    """
-    Agent — автономный агент-фрилансер.
-    
-    Содержит:
-    - Identity: базовая информация
-    - Capabilities: что агент умеет
-    - State: текущее состояние
-    - Metrics: гомеостатические переменные
-    """
     id: str
     name: str
-    
-    # Identity
     status: AgentStatus = AgentStatus.IDLE
     created_at: datetime = field(default_factory=datetime.now)
-    
-    # Capabilities
     capabilities: AgentCapabilities = field(default_factory=AgentCapabilities)
-    
-    # Metrics
     metrics: AgentMetrics = field(default_factory=AgentMetrics)
-    
-    # Mission alignment
     mission_id: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
@@ -195,32 +153,16 @@ class Agent:
 
 @dataclass
 class AgentContext:
-    """
-    AgentContext — контекст агента для принятия решений.
-    
-    Содержит всю информацию для работы агента в текущий момент.
-    """
-    # Текущий агент
     agent: Agent
-    
-    # Текущая миссия
     mission_id: Optional[str] = None
     mission_params: Dict[str, Any] = field(default_factory=dict)
-    
-    # Ресурсы
     available_budget: float = 100.0
-    available_time: float = 24.0  # часы
-    
-    # Приоритеты
+    available_time: float = 24.0
     urgency_multiplier: float = 1.0
-    
-    # Внешние сигналы
     external_signals: Dict[str, Any] = field(default_factory=dict)
-    
-    # Метаданные
     created_at: datetime = field(default_factory=datetime.now)
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "agent_id": self.agent.id,
@@ -236,9 +178,5 @@ class AgentContext:
 
 
 def create_agent(name: str) -> Agent:
-    """Create a new agent with default capabilities."""
     import uuid
-    return Agent(
-        id=str(uuid.uuid4())[:8],
-        name=name,
-    )
+    return Agent(id=str(uuid.uuid4())[:8], name=name)
