@@ -2,7 +2,8 @@
 LifeAwareOrchestrator — pre-LLM upper layer + post status events.
 
 Does not touch SignalToContextSynthesizer.
-Wires life → Stage II H (via self.life on base) and mission_profile accent.
+H for Stage V decision comes from life (wraps homeo.calculate_homeostasis).
+Mission profile accented by life mode.
 """
 from __future__ import annotations
 
@@ -29,6 +30,19 @@ class Orchestrator(_BaseOrchestrator):
     def __init__(self, core_agent: Agent, veto: Optional[GammaVeto] = None):
         super().__init__(core_agent, veto)
         self.life = LifeSupport()
+        # Stage II in core calls self.homeo.calculate_homeostasis — route through life
+        self._legacy_calc_H = self.homeo.calculate_homeostasis
+        self.homeo.calculate_homeostasis = self._life_calculate_homeostasis  # type: ignore
+
+    def _life_calculate_homeostasis(self, metrics: Dict[str, float]):
+        """H high = wellbeing; decision rule: H_val < H_clarify → CLARIFY."""
+        self.life.sync_from_agent(self.core_agent)
+        snap = self.life.homeostasis.step()
+        S = float(getattr(snap, "S", 0.1))
+        U = float(getattr(snap, "U_urge", S))
+        stress = max(0.0, min(1.0, S))
+        H = max(0.0, min(1.2, 1.0 - 0.7 * stress - 0.3 * max(0.0, min(1.0, U))))
+        return H, stress
 
     def dispatch_full_cycle(self, mission_profile: str = "BALANCED") -> Dict[str, Any]:
         if not self.scheduler.list_queue():
@@ -37,7 +51,7 @@ class Orchestrator(_BaseOrchestrator):
         self.life.monitor.set_status(OperationalStatus.ACTIVE)
         self.life.sync_from_agent(self.core_agent)
         pre = self.life.homeostasis.step()
-        pre_mode = pre.mode if hasattr(pre, "mode") else (pre.get("mode") if isinstance(pre, dict) else None)
+        pre_mode = getattr(pre, "mode", None)
         profile = _accent_mission(mission_profile, pre_mode)
 
         result = super().dispatch_full_cycle(profile)
