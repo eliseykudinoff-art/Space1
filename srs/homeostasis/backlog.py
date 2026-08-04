@@ -3,56 +3,52 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
 import uuid
-from config import HomeostasisConfig
+from .config import HomeostasisConfig
+
 
 @dataclass
 class DeferredItem:
-    kind: str
+    id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    kind: str = "generic"
     importance: float = 0.5
     soft_deadline: float = 20.0
     age: float = 0.0
-    id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
     note: str = ""
 
-    def pressure(self) -> float:
-        v = max(0.0, min(1.0, self.importance))
-        return v * min(1.0, self.age / max(self.soft_deadline, 1e-6))
 
 class DeferredBacklog:
-    def __init__(self, config: Optional[HomeostasisConfig] = None):
-        self.cfg = config or HomeostasisConfig()
+    def __init__(self, cfg: Optional[HomeostasisConfig] = None):
+        self.cfg = cfg or HomeostasisConfig()
         self.items: List[DeferredItem] = []
 
     def add(self, kind: str, importance: float = 0.5, soft_deadline: float = 20.0, note: str = "", age: float = 0.0) -> DeferredItem:
-        item = DeferredItem(kind=kind, importance=importance, soft_deadline=soft_deadline, age=age, note=note)
+        item = DeferredItem(kind=kind, importance=importance, soft_deadline=soft_deadline, note=note, age=age)
         self.items.append(item)
         return item
 
-    def age_all(self, dt: float = 1.0) -> None:
-        for it in self.items:
-            it.age += dt
-
-    def complete(self, item_id: Optional[str] = None) -> Optional[DeferredItem]:
+    def complete(self, item_id: Optional[str] = None) -> None:
         if not self.items:
-            return None
-        if item_id:
-            for i, it in enumerate(self.items):
-                if it.id == item_id:
-                    return self.items.pop(i)
-            return None
-        self.items.sort(key=lambda x: -x.pressure())
-        return self.items.pop(0)
+            return
+        if item_id is None:
+            self.items.pop(0)
+            return
+        self.items = [i for i in self.items if i.id != item_id]
 
-    def S_def(self) -> float:
-        raw = sum(self.cfg.c_def * it.pressure() for it in self.items)
-        return max(0.0, min(self.cfg.S_def_max, raw))
+    def age_all(self, dt: float = 1.0) -> None:
+        for i in self.items:
+            i.age += dt
 
     def overdue_ids(self) -> List[str]:
-        return [it.id for it in self.items if it.age >= it.soft_deadline]
+        return [i.id for i in self.items if i.age >= i.soft_deadline]
+
+    def S_def(self) -> float:
+        if not self.items:
+            return 0.0
+        total = 0.0
+        for i in self.items:
+            overdue = max(0.0, i.age - i.soft_deadline) / max(1.0, i.soft_deadline)
+            total += i.importance * (0.3 + 0.7 * min(1.0, i.age / max(1.0, i.soft_deadline)) + 0.2 * min(1.0, overdue))
+        return max(0.0, min(1.0, total / max(1, len(self.items))))
 
     def snapshot(self) -> dict:
-        return {
-            "n": len(self.items),
-            "S_def": round(self.S_def(), 6),
-            "items": [{"id": it.id, "kind": it.kind, "importance": it.importance, "age": it.age, "T": it.soft_deadline, "pressure": round(it.pressure(), 4), "note": it.note} for it in self.items],
-        }
+        return {"n": len(self.items), "S_def": self.S_def(), "items": [{"id": i.id, "kind": i.kind, "age": i.age} for i in self.items]}

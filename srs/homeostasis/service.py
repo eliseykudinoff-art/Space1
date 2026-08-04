@@ -1,11 +1,11 @@
-"""HomeostasisService facade — not wired to Orchestrator."""
+"""HomeostasisService facade."""
 from __future__ import annotations
 from typing import Optional
-from config import HomeostasisConfig, default_config
-from events import EventID, MAJOR_SLOW_EVENTS
-from pulse import HormonePulse
-from backlog import DeferredBacklog, DeferredItem
-from motor import HomeostasisMotor, MotorSnapshot
+from .config import HomeostasisConfig, default_config
+from .events import EventID, MAJOR_SLOW_EVENTS
+from .pulse import HormonePulse
+from .backlog import DeferredBacklog, DeferredItem
+from .motor import HomeostasisMotor, MotorSnapshot
 
 class HomeostasisService:
     def __init__(self, config: Optional[HomeostasisConfig] = None):
@@ -19,7 +19,8 @@ class HomeostasisService:
     def on_heartbeat(self, dt: float = 1.0) -> MotorSnapshot:
         self.pulse.on_heartbeat(dt)
         self.backlog.age_all(dt)
-        self.motor.note_success_decay_fail()
+        if hasattr(self.motor, "note_success_decay_fail"):
+            self.motor.note_success_decay_fail()
         for oid in self.backlog.overdue_ids():
             self.event_log.append(("DEF.ITEM_OVERDUE", oid))
         return self.step(force_slow=False, trap=False)
@@ -74,7 +75,6 @@ class HomeostasisService:
         return s
 
     def idle_tick(self) -> dict:
-        """Future STALL replacement payload (P0)."""
         snap = self.on_heartbeat()
         return {
             "status": "IDLE_TICK",

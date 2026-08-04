@@ -36,7 +36,7 @@ class HormonePulse:
 
     def apply_event(self, event_id: str, amplitude: Optional[Tuple[float, float]] = None) -> None:
         table = dict(DEFAULT_AMPLITUDES)
-        table.update(self.cfg.amplitude_overrides)
+        table.update(getattr(self.cfg, "amplitude_overrides", {}) or {})
         a_s, a_g = amplitude if amplitude is not None else table.get(event_id, (0.0, 0.0))
         self.state.S = max(0.0, min(1.0, self.state.S + a_s))
         self.state.G = max(0.0, min(1.0, self.state.G + a_g))
