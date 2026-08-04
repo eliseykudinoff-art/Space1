@@ -1,4 +1,4 @@
-"""Homeostasis motor: drive, urgency, modes."""
+"""Homeostasis motor: drive D, urge (action pressure — NOT utility U)."""
 from __future__ import annotations
 import math
 from dataclasses import dataclass, field
@@ -20,7 +20,7 @@ class MotorSnapshot:
     G: float = 0.0
     D: float = 0.0
     S_def: float = 0.0
-    U_urge: float = 0.0
+    urge: float = 0.0  # action pressure; never named U (utility is separate)
     L: float = 0.0
     rho: float = 1.0
     tau_idle: float = 0.0
@@ -37,7 +37,7 @@ class MotorSnapshot:
             "G": round(self.G, 6),
             "D": round(self.D, 6),
             "S_def": round(self.S_def, 6),
-            "U_urge": round(self.U_urge, 6),
+            "urge": round(self.urge, 6),
             "L": round(self.L, 6),
             "rho": round(self.rho, 6),
             "tau_idle": round(self.tau_idle, 6),
@@ -74,18 +74,25 @@ class HomeostasisMotor:
             + w.get("compliance", 0.25) * a.compliance
             + w.get("knowledge", 0.15) * a.knowledge
         )
+        # idle time also feeds deficit drive
+        tau0 = getattr(self.cfg, "tau_0", 10.0)
+        if tau_idle >= tau0:
+            D = min(1.0, D + getattr(self.cfg, "w_idle", 0.15) * (tau_idle - tau0) / (tau0 + tau_idle))
         return max(0.0, min(1.0, D))
 
     def note_failure(self, amount: float = 0.5) -> None:
         self.axes.progress = min(1.0, self.axes.progress + 0.1 * amount)
 
+    def note_success_decay_fail(self) -> None:
+        pass
+
     def should_run_slow(self, force: bool = False) -> bool:
         self._slow_tick += 1
-        return force or (self._slow_tick % 5 == 0)
+        return force or (self._slow_tick % max(1, getattr(self.cfg, "K_slow", 5)) == 0)
 
     def update_slow(self, S: float, D: float) -> None:
         self.L = 0.9 * self.L + 0.1 * S
-        self.rho = max(0.5, min(1.5, 1.0 + 0.2 * (D - 0.3)))
+        self.rho = max(0.5, min(1.5, getattr(self.cfg, "rho0", 1.0) + 0.2 * (D - 0.3)))
 
     def compute(
         self,
@@ -97,12 +104,16 @@ class HomeostasisMotor:
         n_deferred: int = 0,
     ) -> MotorSnapshot:
         D = self.drive(tau_idle)
-        U = min(1.0, 0.55 * S + 0.25 * D + 0.20 * S_def)
+        a_s = getattr(self.cfg, "alpha_S", 0.55)
+        a_d = getattr(self.cfg, "alpha_D", 0.25)
+        a_def = getattr(self.cfg, "alpha_def", 0.20)
+        urge = min(1.0, a_s * S + a_d * D + a_def * S_def)
+        urge = min(1.0, self.rho * urge)
         theta_rev = getattr(self.cfg, "theta_rev", 0.28)
         theta_break = getattr(self.cfg, "theta_break", 0.75)
-        revision = U >= theta_rev or S >= theta_rev
+        revision = urge >= theta_rev or S >= theta_rev
         break_loop = trap or S >= theta_break
-        m_u = min(1.0, S * 1.2 + U * 0.3)
+        m_u = min(1.0, S * 1.2 + urge * 0.3)
         m_p = max(0.0, G * 0.8 - S * 0.4)
         if break_loop or S >= 0.55:
             mode = "urgent"
@@ -113,7 +124,7 @@ class HomeostasisMotor:
         else:
             mode = "mixed"
         return MotorSnapshot(
-            S=S, G=G, D=D, S_def=S_def, U_urge=U, L=self.L, rho=self.rho,
+            S=S, G=G, D=D, S_def=S_def, urge=urge, L=self.L, rho=self.rho,
             tau_idle=tau_idle, revision_needed=revision, break_loop=break_loop,
             mode=mode, m_urgent=m_u, m_prospect=m_p, n_deferred=n_deferred,
         )
