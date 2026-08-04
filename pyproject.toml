@@ -20,11 +20,12 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["srs*", "space1*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = [".", "srs"]
 
 [tool.ruff]
 line-length = 100

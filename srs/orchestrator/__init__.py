@@ -1,15 +1,24 @@
-"""
-Orchestrator exports.
-
-P0: public Orchestrator is LifeAware (IDLE_TICK + homeostasis hooks).
-Base implementation remains in core.py (legacy STALL path only if base used directly).
-"""
-
+"""Orchestrator exports — LifeAware + pipeline math contracts."""
 from .core import (
     OrchestratorContext,
     SignalToContextSynthesizer,
     HomeostaticUtilityModulator,
     WeightCalibrator,
+    classify_task,
+    decide_with_pipeline_context,
+    predict_estimates,
+    select_executor,
+    reflect,
+    render_status_block,
+    Attachment,
+    Deviation,
+    Trend,
+    MemorySnippet,
+    ExecutorProfile,
+    ExecutorStatsRegistry,
+    NoEligibleExecutorError,
+    Attempt,
+    ReflectionAction,
 )
 from .life_orchestrator import Orchestrator
 from .scheduler import AIOSScheduler
@@ -25,4 +34,19 @@ __all__ = [
     "AIOSScheduler",
     "AIOSContextManager",
     "AIOSToolManager",
+    "classify_task",
+    "decide_with_pipeline_context",
+    "predict_estimates",
+    "select_executor",
+    "reflect",
+    "render_status_block",
+    "Attachment",
+    "Deviation",
+    "Trend",
+    "MemorySnippet",
+    "ExecutorProfile",
+    "ExecutorStatsRegistry",
+    "NoEligibleExecutorError",
+    "Attempt",
+    "ReflectionAction",
 ]
