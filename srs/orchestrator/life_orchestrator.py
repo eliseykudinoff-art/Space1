@@ -1,13 +1,7 @@
 """
-LifeAwareOrchestrator — life motor before/around the pipeline.
+LifeAwareOrchestrator — single HomeostasisService for life + Stage II/XII facade.
 
-Canon (ARCHIVE + concept):
-  Homeostasis produces state (S, G, urge, mode, revision_needed).
-  That state is an input to prompt synthesis → LLM performs actions
-  (search work, handle order, etc.). No parallel seek_job / self_task loops.
-
-Inbound queue items are optional external events, not the primary driver.
-Utility U exists only in decision/phi — motor field is `urge`.
+No seek_job. No second homeostat math.
 """
 from __future__ import annotations
 
@@ -16,6 +10,7 @@ from typing import Any, Dict, Optional
 from ..compliance.core import GammaVeto
 from ..models.agents import Agent
 from ..monitoring.monitor import OperationalStatus
+from ..utility.control import HomeostaticRegulator
 from .core import Orchestrator as _BaseOrchestrator
 from .life_support import LifeSupport
 
@@ -34,22 +29,10 @@ class Orchestrator(_BaseOrchestrator):
     def __init__(self, core_agent: Agent, veto: Optional[GammaVeto] = None):
         super().__init__(core_agent, veto)
         self.life = LifeSupport()
-        self._legacy_calc_H = self.homeo.calculate_homeostasis
-        self.homeo.calculate_homeostasis = self._life_calculate_homeostasis  # type: ignore
-
-    def _life_calculate_homeostasis(self, metrics: Dict[str, float]):
-        """Wellbeing H for Stage V thresholds — not utility U."""
-        self.life.sync_from_agent(self.core_agent)
-        snap = self.life.homeostasis.step()
-        S = float(getattr(snap, "S", 0.1))
-        urge = float(getattr(snap, "urge", S))
-        stress = max(0.0, min(1.0, S))
-        H = max(0.0, min(1.2, 1.0 - 0.7 * stress - 0.3 * max(0.0, min(1.0, urge))))
-        return H, stress
+        self.homeo = HomeostaticRegulator(service=self.life.homeostasis)
 
     def dispatch_full_cycle(self, mission_profile: str = "BALANCED") -> Dict[str, Any]:
         if not self.scheduler.list_queue():
-            # Life tick only. Does not invent tasks. Signal for LLM is snapshot below.
             return self.life.on_idle(self.core_agent)
 
         self.life.monitor.set_status(OperationalStatus.ACTIVE)
