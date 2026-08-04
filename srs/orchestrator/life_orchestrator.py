@@ -1,8 +1,10 @@
 """
-LifeAwareOrchestrator — P0 integration (clean2).
+LifeAwareOrchestrator — P0: single life motor on top of core pipeline.
 
-Empty queue → IDLE_TICK (homeostasis + monitor).
-Pipeline outcomes → hormone events.
+- Empty queue → IDLE_TICK (never STALL for public API)
+- Pipeline statuses → hormone events
+- Gauges synced from agent metrics
+- notify(event_id) for router / protocols / owner
 """
 from __future__ import annotations
 
@@ -28,20 +30,29 @@ class Orchestrator(_BaseOrchestrator):
 
         self.life.monitor.set_status(OperationalStatus.ACTIVE)
         result = super().dispatch_full_cycle(mission_profile)
-        status = result.get("status")
+        status = result.get("status") or ""
 
-        if status == "SUCCESS":
-            self.life.emit("EXEC.TASK_DONE")
-            self.life.sync_from_agent(self.core_agent)
-        elif status == "REJECTED_BY_COMPLIANCE":
-            self.life.emit("EXT.COMPLIANCE_HIT")
-        elif status == "FAILED_QUALITY_GOAL":
-            self.life.emit("EXEC.VERIFIER_FAIL")
-        elif status == "DECLINED_BY_DECISION_RULE":
-            self.life.emit("EXT.ORDER_REJECTED")
-        elif status == "CLARIFY_REQUIRED":
-            self.life.emit("MEMORY.GAP")
+        if status == "STALL":
+            return self.life.on_idle(self.core_agent)
 
-        result["homeostasis"] = self.life.snapshot()
+        self.life.on_status(status, self.core_agent)
+
+        trace = result.get("trace") or []
+        if any("Payment risk" in str(t) for t in trace):
+            self.life.emit_external("EXT.PAYMENT_OVERDUE", self.core_agent)
+
+        snap = self.life.snapshot()
+        result["homeostasis"] = snap
         result["monitor_status"] = self.life.monitor.status.value
+        result["life_mode"] = snap.get("mode")
+        result["revision_needed"] = snap.get("revision_needed", False)
+        result["break_loop"] = snap.get("break_loop", False)
+
+        if result.get("mission_recalibrated") and snap.get("mode") == "calm":
+            result["dual_homeostat_note"] = "legacy Stage XII flag set; life mode calm"
+
         return result
+
+    def notify(self, event_id: str) -> Dict[str, Any]:
+        """External systems (router, protocols, owner) push events into life motor."""
+        return self.life.emit_external(event_id, self.core_agent)

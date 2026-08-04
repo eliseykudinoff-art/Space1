@@ -31,7 +31,8 @@ class HormonePulse:
     def boredom_tick(self, dt: float = 1.0) -> None:
         self.state.tau_idle += dt
         tau = self.state.tau_idle
-        add = self.cfg.b * (tau / (self.cfg.tau0 + tau))
+        tau0 = getattr(self.cfg, "tau_0", getattr(self.cfg, "tau0", 10.0))
+        add = self.cfg.b * (tau / (tau0 + tau))
         self.state.S = min(1.0, self.state.S + add)
 
     def apply_event(self, event_id: str, amplitude: Optional[Tuple[float, float]] = None) -> None:
